@@ -144,7 +144,7 @@ If the fuzzer terminates with an error, a premature "I am done" message will be 
 
 ## Limitations
 
-The current artifact interacts with OpenAI's Large Language Models (`davinci-003` and `gpt-3.5-turbo`). This puts a third-party limit to the degree of parallelization. The models used in this artifact have a hard limit of 150,000 tokens per minute. Another limitation comes from regional quotas.
+The current artifact interacts with OpenAI's Large Language Models (`davinci-003` and `gpt-3.5-turbo`). This puts a third-party limit to the degree of parallelization. The models used in this artifact have a hard limit of 150,000 tokens per minute.
 
 ## Special Thanks
 
