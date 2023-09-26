@@ -1,0 +1,55 @@
+--- exim.orig/configure	2022-01-14 14:25:04.434851252 +0000
++++ exim/configure	2022-01-14 14:27:22.224399349 +0000
+@@ -339,6 +339,7 @@
+ 
+ # keep_environment = ^LDAP
+ # add_environment = PATH=/usr/bin::/bin
++keep_environment = ASAN_OPTIONS
+ 
+ 
+ 
+@@ -359,7 +360,6 @@
+   # testing for an empty sending host field.
+ 
+   accept  hosts = :
+-          control = dkim_disable_verify
+ 
+   #############################################################################
+   # The following section of the ACL is concerned with local parts that contain
+@@ -438,7 +438,6 @@
+ 
+   accept  hosts         = +relay_from_hosts
+           control       = submission
+-          control       = dkim_disable_verify
+ 
+   # Accept if the message arrived over an authenticated connection, from
+   # any host. Again, these messages are usually from MUAs, so recipient
+@@ -447,7 +446,6 @@
+ 
+   accept  authenticated = *
+           control       = submission
+-          control       = dkim_disable_verify
+ 
+   # Insist that a HELO/EHLO was accepted.
+ 
+@@ -577,14 +575,14 @@
+ # If the DNS lookup fails, no further routers are tried because of the no_more
+ # setting, and consequently the address is unrouteable.
+ 
+-dnslookup:
+-  driver = dnslookup
+-  domains = ! +local_domains
+-  transport = remote_smtp
+-  ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
++#dnslookup:
++#  driver = dnslookup
++#  domains = ! +local_domains
++#  transport = remote_smtp
++#  ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
+ # if ipv6-enabled then instead use:
+ # ignore_target_hosts = <; 0.0.0.0 ; 127.0.0.0/8 ; ::1
+-  no_more
++#  no_more
+ 
+ 
+ # This alternative router can be used when you want to send all mail to a

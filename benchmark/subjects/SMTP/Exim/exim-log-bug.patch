@@ -1,0 +1,15 @@
+diff --git a/src/src/log.c b/src/src/log.c
+index 54d2b8027..9296e0d4a 100644
+--- a/src/src/log.c
++++ b/src/src/log.c
+@@ -1091,8 +1091,8 @@ if (  flags & LOG_MAIN
+     if (mainlog_datestamp)
+       {
+       uschar *nowstamp = tod_stamp(string_datestamp_type);
+-      if (Ustrncmp (mainlog_datestamp, nowstamp, Ustrlen(nowstamp)) != 0)
+-        {
++      if (string_datestamp_type > 0 && Ustrncmp (mainlog_datestamp, nowstamp, Ustrlen(nowstamp)) != 0) 
++      {
+         (void)close(mainlogfd);       /* Close the file */
+         mainlogfd = -1;               /* Clear the file descriptor */
+         mainlog_inode = 0;            /* Unset the inode */

@@ -1,0 +1,61 @@
+diff --git a/evthread_pthread.c b/evthread_pthread.c
+index 4e11f749..42c344d4 100644
+--- a/evthread_pthread.c
++++ b/evthread_pthread.c
+@@ -181,8 +181,8 @@ evthread_use_pthreads(void)
+ 	/* Set ourselves up to get recursive locks. */
+ 	if (pthread_mutexattr_init(&attr_recursive))
+ 		return -1;
+-	if (pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE))
+-		return -1;
++	/*if (pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE))
++		return -1;*/
+ 
+ 	evthread_set_lock_callbacks(&cbs);
+ 	evthread_set_condition_callbacks(&cond_cbs);
+diff --git a/evutil_time.c b/evutil_time.c
+index c3272182..5f899d22 100644
+--- a/evutil_time.c
++++ b/evutil_time.c
+@@ -26,6 +26,7 @@
+ 
+ #include "event2/event-config.h"
+ #include "evconfig-private.h"
++#include "mypth.h"
+ 
+ #ifdef _WIN32
+ #include <winsock2.h>
+diff --git a/include/mypth.h b/include/mypth.h
+new file mode 100644
+index 00000000..25d59e0f
+--- /dev/null
++++ b/include/mypth.h
+@@ -0,0 +1,16 @@
++#ifndef _MY_PTH_H
++#define _MY_PTH_H
++
++#include <pth.h>
++
++#define fork          pth_fork
++#define waitpid       pth_waitpid
++#define system        pth_system
++#define nanosleep     pth_nanosleep
++#define usleep        pth_usleep
++#define sleep         pth_sleep
++#define sigprocmask   pth_sigmask
++#define sigwait       pth_sigwait
++#define select        pth_select
++
++#endif
+diff --git a/select.c b/select.c
+index b1db0e44..1e748713 100644
+--- a/select.c
++++ b/select.c
+@@ -28,6 +28,7 @@
+  */
+ #include "event2/event-config.h"
+ #include "evconfig-private.h"
++#include "mypth.h"
+ 
+ #ifdef EVENT__HAVE_SELECT
+ 

@@ -1,0 +1,91 @@
+diff --git a/src/pool.c b/src/pool.c
+index 58f3f7087..ccb83b314 100644
+--- a/src/pool.c
++++ b/src/pool.c
+@@ -466,6 +466,7 @@ const char *pr_pool_get_tag(pool *p) {
+ 
+ /* Release the entire free block list */
+ static void pool_release_free_block_list(void) {
++  return;
+   union block_hdr *blok = NULL, *next = NULL;
+ 
+   pr_alarms_block();
+@@ -479,10 +480,12 @@ static void pool_release_free_block_list(void) {
+   pr_alarms_unblock();
+ }
+ 
++__attribute__ ((noinline))
+ struct pool_rec *make_sub_pool(struct pool_rec *p) {
+   union block_hdr *blok;
+   pool *new_pool;
+ 
++/*
+   pr_alarms_block();
+ 
+   blok = new_block(0, FALSE);
+@@ -508,12 +511,15 @@ struct pool_rec *make_sub_pool(struct pool_rec *p) {
+   pr_alarms_unblock();
+ 
+   return new_pool;
++*/
++ return malloc(sizeof(struct pool_rec));
+ }
+ 
+-struct pool_rec *pr_pool_create_sz(struct pool_rec *p, size_t sz) {
++struct pool_rec* __attribute__ ((noinline)) pr_pool_create_sz(struct pool_rec *p, size_t sz) {
+   union block_hdr *blok;
+   pool *new_pool;
+ 
++/*
+   pr_alarms_block();
+ 
+   blok = new_block(sz + POOL_HDR_BYTES, TRUE);
+@@ -539,6 +545,8 @@ struct pool_rec *pr_pool_create_sz(struct pool_rec *p, size_t sz) {
+   pr_alarms_unblock();
+ 
+   return new_pool;
++*/
++  return malloc(sizeof(struct pool_rec));
+ }
+ 
+ /* Initialize the pool system by creating the base permanent_pool. */
+@@ -558,7 +566,7 @@ void free_pools(void) {
+ }
+ 
+ static void clear_pool(struct pool_rec *p) {
+-
++  return;
+   /* Sanity check. */
+   if (p == NULL) {
+     return;
+@@ -680,12 +688,14 @@ static void *alloc_pool(struct pool_rec *p, size_t reqsz, int exact) {
+   return (void *) first_avail;
+ }
+ 
+-void *palloc(struct pool_rec *p, size_t sz) {
+-  return alloc_pool(p, sz, FALSE);
++void * __attribute__ ((noinline)) palloc(struct pool_rec *p, size_t sz) {
++  //return alloc_pool(p, sz, FALSE);
++  return malloc(sz);
+ }
+ 
+ void *pallocsz(struct pool_rec *p, size_t sz) {
+-  return alloc_pool(p, sz, TRUE);
++  //return alloc_pool(p, sz, TRUE);
++  return malloc(sz);
+ }
+ 
+ void *pcalloc(struct pool_rec *p, size_t sz) {
+diff --git a/src/table.c b/src/table.c
+index 5f16f2952..08606208e 100644
+--- a/src/table.c
++++ b/src/table.c
+@@ -385,6 +385,8 @@ static unsigned int tab_get_seed(void) {
+   }
+ #endif /* PR_USE_OPENSSL */
+ 
++  seed = 0;
++
+   return seed;
+ }
+ 

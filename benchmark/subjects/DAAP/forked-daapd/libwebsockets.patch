@@ -1,0 +1,75 @@
+diff -uNr libwebsockets-2.0.3-orig/lib/libev.c libwebsockets-2.0.3/lib/libev.c
+--- libwebsockets-2.0.3-orig/lib/libev.c	2016-09-14 19:07:47.000000000 +0000
++++ libwebsockets-2.0.3/lib/libev.c	2020-08-27 09:15:24.237004460 +0000
+@@ -21,6 +21,11 @@
+ 
+ #include "private-libwebsockets.h"
+ 
++#include <pth.h>
++
++#define poll	pth_poll
++#define select	pth_select
++
+ void lws_feature_status_libev(struct lws_context_creation_info *info)
+ {
+ 	if (lws_check_opt(info->options, LWS_SERVER_OPTION_LIBEV))
+@@ -113,10 +118,10 @@
+ 
+ 	switch (backend) {
+ 	case EVBACKEND_SELECT:
+-		backend_name = "select";
++		backend_name = "pth_select";
+ 		break;
+ 	case EVBACKEND_POLL:
+-		backend_name = "poll";
++		backend_name = "pth_poll";
+ 		break;
+ 	case EVBACKEND_EPOLL:
+ 		backend_name = "epoll";
+diff -uNr libwebsockets-2.0.3-orig/lib/lws-plat-unix.c libwebsockets-2.0.3/lib/lws-plat-unix.c
+--- libwebsockets-2.0.3-orig/lib/lws-plat-unix.c	2016-09-14 19:07:47.000000000 +0000
++++ libwebsockets-2.0.3/lib/lws-plat-unix.c	2020-08-26 19:19:18.160226848 +0000
+@@ -6,6 +6,10 @@
+ #include <dlfcn.h>
+ #include <dirent.h>
+ 
++#include <pth.h>
++
++#define poll	pth_poll
++#define select  pth_select
+ 
+ /*
+  * included from libwebsockets.c for unix builds
+diff -uNr libwebsockets-2.0.3-orig/lib/ssl.c libwebsockets-2.0.3/lib/ssl.c
+--- libwebsockets-2.0.3-orig/lib/ssl.c	2016-09-14 19:07:47.000000000 +0000
++++ libwebsockets-2.0.3/lib/ssl.c	2020-08-26 19:18:07.304524675 +0000
+@@ -194,6 +194,7 @@
+ 	if (!vhost->user_supplied_ssl_ctx && vhost->ssl_client_ctx)
+ 		SSL_CTX_free(vhost->ssl_client_ctx);
+ 
++#if (OPENSSL_VERSION_NUMBER < 0x10100006L)
+ #if (OPENSSL_VERSION_NUMBER < 0x01000000) || defined(USE_WOLFSSL)
+ 	ERR_remove_state(0);
+ #else
+@@ -210,6 +211,7 @@
+ 	CRYPTO_cleanup_all_ex_data();
+ #endif
+ #endif
++#endif
+ }
+ 
+ LWS_VISIBLE void
+@@ -688,6 +690,7 @@
+ #else
+ #if defined(LWS_USE_MBEDTLS)
+ #else
++#if (OPENSSL_VERSION_NUMBER < 0x10100006L)
+ #if (OPENSSL_VERSION_NUMBER < 0x01000000) || defined(USE_WOLFSSL)
+ 	ERR_remove_state(0);
+ #else
+@@ -704,4 +707,5 @@
+ 	CRYPTO_cleanup_all_ex_data();
+ #endif
+ #endif
++#endif
+ }

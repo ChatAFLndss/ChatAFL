@@ -1,0 +1,58 @@
+diff --git a/Source/ftpserv.c b/Source/ftpserv.c
+index 4117c1e..f108b90 100644
+--- a/Source/ftpserv.c
++++ b/Source/ftpserv.c
+@@ -1566,7 +1566,7 @@ void *ftp_client_thread(SOCKET s)
+     struct sockaddr_in		laddr;
+     pthread_mutexattr_t		m_attr;
+ 
+-    pthread_detach(pthread_self());
++    //pthread_detach(pthread_self());
+     memset(&rcvbuf, 0, sizeof(rcvbuf));
+     memset(&ctx, 0, sizeof(ctx));
+ 
+@@ -1780,6 +1780,8 @@ void *ftpmain(void *p)
+                 g_threads, g_cfg.MaxUsers, g_client_sockets_created, g_client_sockets_closed);
+ 
+         writelogentry(NULL, text, "");
++        pthread_join(th,NULL);
++        break;
+     }
+ 
+     close(ftpsocket);
+diff --git a/Source/main.c b/Source/main.c
+index cc67a9a..a3393a1 100644
+--- a/Source/main.c
++++ b/Source/main.c
+@@ -65,9 +65,10 @@ int main(int argc, char *argv[])
+ 		if (config_parse(cfg, CONFIG_SECTION_NAME, "local_mask", textbuf, bufsize))
+ 			g_cfg.LocalIPMask = inet_addr(textbuf);
+ 
+-		g_cfg.Port = DEFAULT_FTP_PORT;
+-		if (config_parse(cfg, CONFIG_SECTION_NAME, "port", textbuf, bufsize))
+-			g_cfg.Port = strtoul(textbuf, NULL, 10);
++		//g_cfg.Port = DEFAULT_FTP_PORT;
++		//if (config_parse(cfg, CONFIG_SECTION_NAME, "port", textbuf, bufsize))
++		//	g_cfg.Port = strtoul(textbuf, NULL, 10);
++		g_cfg.Port = strtoul(argv[2], NULL, 10);
+ 
+ 		g_cfg.MaxUsers = 1;
+ 		if (config_parse(cfg, CONFIG_SECTION_NAME, "maxusers", textbuf, bufsize))
+@@ -142,11 +143,13 @@ int main(int argc, char *argv[])
+ 			break;
+ 		}
+ 
+-		do {
+-			c = getc(stdin);
+-			sleep(1);
+-		} while ((c != 'q') && (c != 'Q'));
++		// do {
++		// 	c = getc(stdin);
++		// 	sleep(1);
++		// } while ((c != 'q') && (c != 'Q'));
+ 
++		//Terminate the server when the main thread terminates
++		pthread_join(thid,NULL);
+ 		break;
+ 	}
+ 

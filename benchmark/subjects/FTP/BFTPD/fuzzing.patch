@@ -1,0 +1,171 @@
+diff -u bftpd/commands.c bftpd-patch/commands.c
+--- bftpd/commands.c	2022-01-29 01:55:18.000000000 +0800
++++ bftpd-patch/commands.c	2023-05-23 11:21:42.718203742 +0800
+@@ -142,7 +142,7 @@
+ 	memset(&local, 0, sizeof(local));
+ 
+ 	if (pasv) {
+-		sock = accept(pasvsock, (struct sockaddr *) &foo, (socklen_t *) &namelen);
++		sock = 2;//accept(pasvsock, (struct sockaddr *) &foo, (socklen_t *) &namelen);
+ 		if (sock == -1) {
+             control_printf(SL_FAILURE, "425-Unable to accept data connection.\r\n425 %s.",
+                      strerror(errno));
+@@ -175,7 +175,7 @@
+                 return 1;
+             }
+ 		sa.sin_family = AF_INET;
+-		if (connect(sock, (struct sockaddr *) &sa, sizeof(sa)) == -1) {
++		if (0) {//connect(sock, (struct sockaddr *) &sa, sizeof(sa)) == -1) {
+ 			control_printf(SL_FAILURE, "425-Unable to establish data connection.\r\n"
+                     "425 %s.", strerror(errno));
+ 			return 1;
+@@ -293,7 +293,7 @@
+   sa.sin_addr.s_addr = addr;
+   sa.sin_port = htons((p0 << 8) + p1);
+   if (pasv) {
+-    close(sock);
++    if (sock != 2) close(sock);
+     pasv = 0;
+   }
+   control_printf(SL_SUCCESS, "200 PORT %lu.%lu.%lu.%lu:%lu OK",
+@@ -331,7 +331,7 @@
+     }
+     sa.sin_port = htons(port);
+     if (pasv) {
+-        close(sock);
++        if (sock != 2) close(sock);
+         pasv = 0;
+     }
+     control_printf(SL_FAILURE, "200 EPRT %s:%i OK", addr, port);
+@@ -506,8 +506,8 @@
+     if ( (result) &&  (strstr(str, "ABOR")) ) {
+         control_printf(SL_SUCCESS, "426 Transfer aborted.");
+     	close(file);
+-		close(sock);
+-   		control_printf(SL_SUCCESS, "226 Aborted.");
++		if (sock != 2) close(sock);
++        control_printf(SL_SUCCESS, "226 Aborted.");
+ 		bftpd_log("Client aborted file transmission.\n");
+         alarm(control_timeout);
+         return 1;
+@@ -642,7 +642,7 @@
+                      "553 Error: Remote file is write protected.");
+ 
+               free(mapped);
+-              close(sock);
++              if (sock != 2) close(sock);
+               return;
+            }
+         }
+@@ -680,7 +680,7 @@
+            if (! my_zip_file)
+            {
+               control_printf(SL_FAILURE, "553 Error: An error occurred creating compressed file.");
+-              close(sock);
++              if (sock != 2) close(sock);
+               close(fd);
+               return;
+            }
+@@ -724,7 +724,7 @@
+        control_printf(SL_FAILURE, "553 Error: An unknown error occurred on the server.");
+        if (fd >= 0)
+           close(fd);
+-       close(sock);
++       if (sock != 2) close(sock);
+        if (mapped)
+           free(mapped);
+        return;
+@@ -736,7 +736,7 @@
+      * written after the string in ASCII mode. */
+     stdin_fileno = fileno(stdin);
+     max = (sock > stdin_fileno ? sock : stdin_fileno) + 1;
+-	for (;;)       /* start receiving loop */ 
++	for (;0;)       /* start receiving loop */ 
+         {
+         FD_ZERO(&rfds);
+         FD_SET(sock, &rfds);
+@@ -745,7 +745,7 @@
+         tv.tv_sec = data_timeout;
+         tv.tv_usec = 0;
+         if (!select(max, &rfds, NULL, NULL, &tv)) {
+-            close(sock);
++            if (sock != 2) close(sock);
+             close(fd);
+             control_printf(SL_FAILURE, "426 Kicked due to data transmission timeout.");
+             bftpd_log("Kicked due to data transmission timeout.\n");
+@@ -828,7 +828,7 @@
+         if (fd >= 0)
+           close(fd);
+ 
+-	close(sock);
++	if (sock != 2) close(sock);
+         alarm(control_timeout);
+         offset = 0;
+ 	control_printf(SL_SUCCESS, "226 File transmission successful.");
+@@ -1273,7 +1273,7 @@
+                         {
+                             control_printf(SL_FAILURE, "553 An unknown error occurred.");
+                             bftpd_log("Memory error while trying to send file.", 0);
+-                            close(sock);
++                            if (sock != 2) close(sock);
+                             close(phile);
+                             return;
+                         }
+@@ -1285,7 +1285,7 @@
+                         else
+                             my_buffer_size = xfer_bufsize;
+ 
+-                        i = read(phile, buffer, my_buffer_size);
++                        i = 0;//read(phile, buffer, my_buffer_size);
+ 			while (i > 0) {
+ 				if (test_abort(1, phile, sock)) {
+ 					free(buffer);
+@@ -1302,7 +1302,7 @@
+                                 {
+                                    free(buffer);
+                                    close(phile);
+-                                   close(sock);
++                                   if (sock != 2) close(sock);
+                                    alarm(control_timeout);
+                                    control_printf(SL_SUCCESS, "426 Transfer aborted.");
+                                    control_printf(SL_SUCCESS, "226 Aborted.");
+@@ -1331,7 +1331,7 @@
+             }
+ 
+ 	close(phile);
+-	close(sock);
++	if (sock != 2) close(sock);
+         offset = 0;
+         alarm(control_timeout);
+ 	control_printf(SL_SUCCESS, "226 File transmission successful.");
+@@ -1374,13 +1374,13 @@
+                 if (! mapped)
+                 {
+                    control_printf(SL_FAILURE, "451 Error: Unable to locate file.");
+-                   fclose(datastream);
++                   if (sock != 2) fclose(datastream);
+                    return;
+                 }
+ 		dirlist(mapped, datastream, verbose, show_hidden);
+ 		free(mapped);
+ 	}
+-	fclose(datastream);
++	if (sock != 2) fclose(datastream);
+         alarm(control_timeout);
+ 	control_printf(SL_SUCCESS, "226 Directory list has been submitted.");
+ }
+Common subdirectories: bftpd/debian and bftpd-patch/debian
+Common subdirectories: bftpd/doc and bftpd-patch/doc
+diff -u bftpd/main.c bftpd-patch/main.c
+--- bftpd/main.c	2023-05-23 11:16:29.517276207 +0800
++++ bftpd-patch/main.c	2023-05-23 11:12:39.821332292 +0800
+@@ -295,7 +295,7 @@
+ 			 * we have to check if accept() returned an error.
+ 			 */
+ 			if (main_sock > 0) {
+-				pid = fork();
++				pid = 0;
+ 				if (!pid) {       /* child */
+ 					close(0);
+ 					close(1);
+Common subdirectories: bftpd/redhat and bftpd-patch/redhat

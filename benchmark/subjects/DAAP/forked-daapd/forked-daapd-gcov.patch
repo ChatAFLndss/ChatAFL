@@ -1,0 +1,39 @@
+diff --git a/src/main.c b/src/main.c
+index 58f12f56..37a29e4c 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -84,6 +84,12 @@ struct event_base *evbase_main;
+ static struct event *sig_event;
+ static int main_exit;
+
++void sig_handler(int signo)
++{
++  if (signo == SIGUSR1)
++    exit(0);
++}
++
+ static void
+ version(void)
+ {
+@@ -536,6 +542,8 @@ main(int argc, char **argv)
+   mdns_no_cname = false;
+   mdns_no_web = false;
+ 
++  signal(SIGUSR1, sig_handler);
++
+   while ((option = getopt_long(argc, argv, "D:d:c:P:fb:vw:", option_map, NULL)) != -1)
+     {
+       switch (option)
+diff --git a/src/httpd.c b/src/httpd.c
+index ffb03d87..1b12a1aa 100644
+--- a/src/httpd.c
++++ b/src/httpd.c
+@@ -1445,6 +1445,8 @@ httpd_send_reply(struct evhttp_request *req, int code, const char *reason, struc
+     {
+       evhttp_send_reply(req, code, reason, evbuf);
+     }
++
++   __gcov_flush();
+ }
+
+ // This is a modified version of evhttp_send_error (credit libevent)

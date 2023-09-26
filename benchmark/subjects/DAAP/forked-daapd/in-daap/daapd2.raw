@@ -1,0 +1,103 @@
+GET /api/settings HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3 HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FDavid+Hilowitz HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FDavid+Hilowitz%2FGradual+Sunrise HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:6&position=0 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FDavid+Hilowitz HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3 HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FMild_Wild HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FMild_Wild%2Fa_Line_Spacing_b_Say_Goodnight HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:5&position=0 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FMild_Wild HTTP/1.1
+
+POST /api/queue/items/add?expression=path+starts+with+%22%2Ftmp%2FMP3%2FMild_Wild%2FParticular_PacePrimary_Colors%22+order+by+path+asc HTTP/1.1
+Content-Length: 0
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FMild_Wild%2Fa_Line_Spacing_b_Say_Goodnight HTTP/1.1
+
+GET /api/queue HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FMild_Wild HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3 HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FScott+Holmes HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FScott+Holmes%2FUpbeat+Party HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:1&position=0 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FScott+Holmes HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FScott+Holmes%2FStorybook HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:2&shuffle=false&clear=true&playback=start&playback_from_position=0 HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3%2FScott+Holmes HTTP/1.1
+
+GET /api/library/files?directory=%2Ftmp%2FMP3 HTTP/1.1
+
+PUT /api/player/volume?volume=13 HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/volume?volume=84 HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/consume?state=true HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/consume?state=false HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/shuffle?state=false HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/repeat?state=all HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/repeat?state=single HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/repeat?state=off HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+

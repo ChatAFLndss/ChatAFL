@@ -1,0 +1,132 @@
+diff --git a/src/main.c b/src/main.c
+index 07b89604f8..4e34f416ad 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -1404,9 +1404,9 @@ int main_loop(void)
+ 		 * local configuration */
+ 		cfg_register_child(
+ 				1   /* main = udp listener */
+-				+ 1 /* timer */
++				//+ 1 /* timer */
+ #ifdef USE_SLOW_TIMER
+-				+ 1 /* slow timer */
++				//+ 1 /* slow timer */
+ #endif
+ 			);
+ 		if (do_suid()==-1) goto error; /* try to drop privileges */
+@@ -1439,14 +1439,12 @@ int main_loop(void)
+ 
+ #ifdef USE_SLOW_TIMER
+ 		/* we need another process to act as the "slow" timer*/
+-				pid = fork_process(PROC_TIMER, "slow timer", 0);
++		/*		pid = fork_process(PROC_TIMER, "slow timer", 0);
+ 				if (pid<0){
+ 					LM_CRIT("Cannot fork\n");
+ 					goto error;
+ 				}
+ 				if (pid==0){
+-					/* child */
+-					/* timer!*/
+ 					if (real_time&2)
+ 						set_rt_prio(rt_timer2_prio, rt_timer2_policy);
+ 
+@@ -1455,28 +1453,28 @@ int main_loop(void)
+ 				}else{
+ 					slow_timer_pid=pid;
+ 				}
++		*/
+ #endif
+ 				/* we need another process to act as the "main" timer*/
++		/*
+ 				pid = fork_process(PROC_TIMER, "timer", 0);
+ 				if (pid<0){
+ 					LM_CRIT("Cannot fork\n");
+ 					goto error;
+ 				}
+ 				if (pid==0){
+-					/* child */
+-					/* timer!*/
+ 					if (real_time&1)
+ 						set_rt_prio(rt_timer1_prio, rt_timer1_policy);
+ 					if (arm_timer()<0) goto error;
+ 					timer_main();
+ 				}else{
+-					/* do nothing for main timer */
+ 				}
+ 
+ 		if(sr_wtimer_start()<0) {
+ 			LM_CRIT("Cannot start wtimer\n");
+ 			goto error;
+ 		}
++		*/
+ 		/* main process, receive loop */
+ 		process_no=0; /*main process number*/
+ 		pt[process_no].pid=getpid();
+@@ -1513,12 +1511,12 @@ int main_loop(void)
+ 		/* Register the children that will keep updating their
+ 		 * local configuration. (udp/tcp/sctp listeneres
+ 		 * will be added later.) */
+-		cfg_register_child(
+-				1   /* timer */
++//		cfg_register_child(
++//				1   /* timer */
+ #ifdef USE_SLOW_TIMER
+-				+ 1 /* slow timer */
++//				+ 1 /* slow timer */
+ #endif
+-			);
++//			);
+ 
+ 		for(si=udp_listen;si;si=si->next){
+ 			/* create the listening socket (for each address)*/
+@@ -1805,12 +1803,12 @@ int main_loop(void)
+ 
+ #ifdef USE_SLOW_TIMER
+ 		/* fork again for the "slow" timer process*/
++		/*
+ 		pid = fork_process(PROC_TIMER, "slow timer", 1);
+ 		if (pid<0){
+ 			LM_CRIT("cannot fork \"slow\" timer process\n");
+ 			goto error;
+ 		}else if (pid==0){
+-			/* child */
+ 			if (real_time&2)
+ 				set_rt_prio(rt_timer2_prio, rt_timer2_policy);
+ 			if (arm_slow_timer()<0) goto error;
+@@ -1818,15 +1816,16 @@ int main_loop(void)
+ 		}else{
+ 			slow_timer_pid=pid;
+ 		}
++		*/
+ #endif /* USE_SLOW_TIMER */
+ 
+ 		/* fork again for the "main" timer process*/
++		/*
+ 		pid = fork_process(PROC_TIMER, "timer", 1);
+ 		if (pid<0){
+ 			LM_CRIT("cannot fork timer process\n");
+ 			goto error;
+ 		}else if (pid==0){
+-			/* child */
+ 			if (real_time&1)
+ 				set_rt_prio(rt_timer1_prio, rt_timer1_policy);
+ 			if (arm_timer()<0) goto error;
+@@ -1836,7 +1835,7 @@ int main_loop(void)
+ 			LM_CRIT("Cannot start wtimer\n");
+ 			goto error;
+ 		}
+-
++		*/
+ 	/* init childs with rank==MAIN before starting tcp main (in case they want
+ 	 * to fork  a tcp capable process, the corresponding tcp. comm. fds in
+ 	 * pt[] must be set before calling tcp_main_loop()) */
+@@ -2492,7 +2491,8 @@ try_again:
+ 	}else{
+ 		LM_WARN("could not open /dev/urandom (%d)\n", errno);
+ 	}
+-	seed+=getpid()+time(0);
++	//seed+=getpid()+time(0);
++	seed=0;
+ 	LM_DBG("seeding PRNG with %u\n", seed);
+ 	cryptorand_seed(seed);
+ 	fastrand_seed(cryptorand());

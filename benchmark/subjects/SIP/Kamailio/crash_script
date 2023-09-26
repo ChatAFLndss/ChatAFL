@@ -1,0 +1,41 @@
+#!/bin/bash
+
+folder=$1   #fuzzer result folder
+pno=$2      #port number
+fmode=$3    #file mode -- structured or not
+            #fmode = 0: the test case is a concatenated message sequence -- there is no message boundary
+            #fmode = 1: the test case is a structured file keeping several request messages
+
+#files stored in replayable-* folders are structured
+#in such a way that messages are separated
+testdir=
+replayer=
+if [ $fmode -eq "1" ]; then
+  testdir="replayable-crashes"
+  replayer="aflnet-replay"
+else
+  testdir="crashes"
+  replayer="afl-replay"
+fi
+
+#process fuzzer-generated testcases
+count=0
+for f in $(echo $folder/$testdir/id* | grep -v "*"); do 
+
+  echo $f
+
+  $replayer $f SIP $pno 1 > /dev/null 2>&1 & ./run_pjsip > /dev/null 2>&1 &
+  timeout -k 1s -s SIGTERM 3s ./kamailio-gcov/src/kamailio -f ./kamailio-basic.cfg -L ./kamailio-gcov/src/modules -Y ./kamailio-gcov/runtime_dir/ -n 1 -D -E > /dev/null 2>&1
+ 
+
+  wait
+
+  if [ $? -ge 128 ]; then
+    echo "Terminated: $?"
+  fi
+
+  echo
+  echo
+
+done
+

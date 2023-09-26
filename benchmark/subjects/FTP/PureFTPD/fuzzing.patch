@@ -1,0 +1,81 @@
+diff --git a/src/alt_arc4random.c b/src/alt_arc4random.c
+index 4d5cc12..3d1c4a2 100644
+--- a/src/alt_arc4random.c
++++ b/src/alt_arc4random.c
+@@ -137,6 +137,9 @@ static int random_dev_open(void)
+ 
+ void alt_arc4random_stir(void)
+ {
++    memset(&rng_state, 0, sizeof(rng_state));
++    return;
++
+     if (rng_state.initialized == 0) {
+         rng_state.fd = -1;
+     }
+@@ -154,6 +157,9 @@ void alt_arc4random_stir(void)
+ 
+ void alt_arc4random_buf(void* buffer, size_t len)
+ {
++    memset(buffer, 0, len);
++    return;
++
+     unsigned char *buffer_ = (unsigned char*)buffer;
+     size_t         off;
+     size_t         remaining;
+diff --git a/src/ftpd.c b/src/ftpd.c
+index 6f1f504..9b15aa1 100644
+--- a/src/ftpd.c
++++ b/src/ftpd.c
+@@ -4632,7 +4632,7 @@ static void fixlimits(void)
+     lim.rlim_max = lim.rlim_cur = MAX_CPU_TIME;
+     setrlimit(RLIMIT_CPU, &lim);
+     lim.rlim_max = lim.rlim_cur = MAX_DATA_SIZE;
+-    setrlimit(RLIMIT_DATA, &lim);
++    //setrlimit(RLIMIT_DATA, &lim);
+ # ifndef DEBUG
+     lim.rlim_max = lim.rlim_cur = 0;
+     setrlimit(RLIMIT_CORE, &lim);
+@@ -4855,8 +4855,8 @@ static void fill_atomic_prefix(void)
+              ATOMIC_PREFIX_PREFIX,
+              (unsigned long) session_start_time,
+              (unsigned int) serverport,
+-             (unsigned long) getpid(),
+-             zrand());
++             //(unsigned long) getpid(),
++             0,0);
+     if ((atomic_prefix = strdup(tmp_atomic_prefix)) == NULL) {
+         die_mem();
+     }
+@@ -4869,7 +4869,7 @@ static void doit(void)
+     int display_banner = 1;
+ 
+     client_init_reply_buf();
+-    session_start_time = time(NULL);
++    session_start_time = 0;
+     fixlimits();
+ #ifdef F_SETOWN
+     fcntl(clientfd, F_SETOWN, getpid());
+@@ -4994,13 +4994,7 @@ static void doit(void)
+ #endif
+     /* Back to the client - Get the 5 min load average */
+     {
+-        double load_[2];
+-
+-        if (getloadavg(load_, sizeof load_ / sizeof load_[0]) < 0) {
+-            load = 0.0;
+-        } else {
+-            load = load_[1];
+-        }
++        load = 0.0;
+     }
+ #ifndef NON_ROOT_FTP
+     wd[0] = '/';
+@@ -5287,7 +5281,7 @@ static void accept_client(const int active_listen_fd) {
+     sigaddset(&set, SIGCHLD);
+     sigprocmask(SIG_BLOCK, &set, NULL);
+     nb_children++;
+-    child = fork();
++    child = 0;
+     if (child == (pid_t) 0) {
+         if (isatty(2)) {
+             (void) close(2);

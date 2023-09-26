@@ -1,0 +1,111 @@
+#!/bin/bash
+
+folder=$1   #fuzzer result folder
+pno=$2      #port number
+step=$3     #step to skip running gcovr and outputting data to covfile
+            #e.g., step=5 means we run gcovr after every 5 test cases
+covfile=$4  #path to coverage file
+fmode=$5    #file mode -- structured or not
+            #fmode = 0: the test case is a concatenated message sequence -- there is no message boundary
+            #fmode = 1: the test case is a structured file keeping several request messages
+
+#delete the existing coverage file
+rm $covfile; touch $covfile
+
+#clear gcov data
+gcovr -r . -s -d > /dev/null 2>&1
+
+rm -rf /home/ubuntu/ftpshare/*
+
+mkdir /home/ubuntu/ftpshare/data
+chmod go+w /home/ubuntu/ftpshare/data
+
+mkdir -p /home/ubuntu/ftpshare/home/ubuntu/experiments/bftpd-gcov/
+chmod -R go+w /home/ubuntu/ftpshare/home
+
+cp $WORKDIR/basic.config $WORKDIR/basic.config.bak
+perl -p -i -e 's|AUTO_CHDIR="[^"]*"|AUTO_CHDIR="/data"|' ../basic.conf
+
+#output the header of the coverage file which is in the CSV format
+#Time: timestamp, l_per/b_per and l_abs/b_abs: line/branch coverage in percentage and absolutate number
+echo "Time,l_per,l_abs,b_per,b_abs" >> $covfile
+
+#files stored in replayable-* folders are structured
+#in such a way that messages are separated
+if [ $fmode -eq "1" ]; then
+  testdir="replayable-queue"
+  replayer="aflnet-replay"
+else
+  testdir="queue"
+  replayer="afl-replay"
+fi
+
+#process initial seed corpus first
+for f in $(echo $folder/$testdir/*.raw); do 
+  time=$(stat -c %Y $f)
+
+  #terminate running server(s)
+  pkill bftpd
+
+  rm -rf /home/ubuntu/ftpshare/data/*
+  chown -R ubuntu:ubuntu /home/ubuntu/ftpshare/home
+  chmod -R go+w /home/ubuntu/ftpshare/home
+
+  $replayer $f FTP $pno 1 > /dev/null 2>&1 &
+  GCOV_PREFIX=/home/ubuntu/ftpshare timeout -k 1s 3s ./bftpd -D -c ${WORKDIR}/basic.conf
+  
+  wait
+  cp /home/ubuntu/ftpshare/home/ubuntu/experiments/bftpd-gcov/*.gcda /home/ubuntu/experiments/bftpd-gcov/ > /dev/null 2>&1
+  cov_data=$(gcovr -r . -s | grep "[lb][a-z]*:")
+  l_per=$(echo "$cov_data" | grep lines | cut -d" " -f2 | rev | cut -c2- | rev)
+  l_abs=$(echo "$cov_data" | grep lines | cut -d" " -f3 | cut -c2-)
+  b_per=$(echo "$cov_data" | grep branch | cut -d" " -f2 | rev | cut -c2- | rev)
+  b_abs=$(echo "$cov_data" | grep branch | cut -d" " -f3 | cut -c2-)
+  
+  echo "$time,$l_per,$l_abs,$b_per,$b_abs" >> $covfile
+done
+
+#process fuzzer-generated testcases
+count=0
+for f in $(echo $folder/$testdir/id*); do 
+  time=$(stat -c %Y $f)
+
+  #terminate running server(s)
+  pkill bftpd
+
+  rm -rf /home/ubuntu/ftpshare/data/*
+  chown -R ubuntu:ubuntu /home/ubuntu/ftpshare/home
+  chmod -R go+w /home/ubuntu/ftpshare/home
+  
+  $replayer $f FTP $pno 1 > /dev/null 2>&1 &
+  GCOV_PREFIX=/home/ubuntu/ftpshare timeout -k 1s 3s ./bftpd -D -c ${WORKDIR}/basic.conf
+
+  wait
+  cp /home/ubuntu/ftpshare/home/ubuntu/experiments/bftpd-gcov/*.gcda /home/ubuntu/experiments/bftpd-gcov/ > /dev/null 2>&1
+  count=$(expr $count + 1)
+  rem=$(expr $count % $step)
+  if [ "$rem" != "0" ]; then continue; fi
+  cov_data=$(gcovr -r . -s | grep "[lb][a-z]*:")
+  l_per=$(echo "$cov_data" | grep lines | cut -d" " -f2 | rev | cut -c2- | rev)
+  l_abs=$(echo "$cov_data" | grep lines | cut -d" " -f3 | cut -c2-)
+  b_per=$(echo "$cov_data" | grep branch | cut -d" " -f2 | rev | cut -c2- | rev)
+  b_abs=$(echo "$cov_data" | grep branch | cut -d" " -f3 | cut -c2-)
+  
+  echo "$time,$l_per,$l_abs,$b_per,$b_abs" >> $covfile
+done
+
+#ouput cov data for the last testcase(s) if step > 1
+if [[ $step -gt 1 ]]
+then
+  time=$(stat -c %Y $f)
+  cov_data=$(gcovr -r . -s | grep "[lb][a-z]*:")
+  l_per=$(echo "$cov_data" | grep lines | cut -d" " -f2 | rev | cut -c2- | rev)
+  l_abs=$(echo "$cov_data" | grep lines | cut -d" " -f3 | cut -c2-)
+  b_per=$(echo "$cov_data" | grep branch | cut -d" " -f2 | rev | cut -c2- | rev)
+  b_abs=$(echo "$cov_data" | grep branch | cut -d" " -f3 | cut -c2-)
+  
+  echo "$time,$l_per,$l_abs,$b_per,$b_abs" >> $covfile
+fi
+
+cp $WORKDIR/basic.config.bak $WORKDIR/basic.config
+

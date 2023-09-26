@@ -1,0 +1,71 @@
+diff --git a/config.linux b/config.linux
+index b4021ef..489ccc1 100644
+--- a/config.linux
++++ b/config.linux
+@@ -1,4 +1,4 @@
+-COMPILE_OPTS =		$(INCLUDES) -I/usr/local/include -I. -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
++COMPILE_OPTS =		$(INCLUDES) -I/usr/local/include -I. -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DALLOW_RTSP_SERVER_PORT_REUSE=1
+ C =			c
+ C_COMPILER =		cc
+ C_FLAGS =		$(COMPILE_OPTS) $(CPPFLAGS) $(CFLAGS)
+diff --git a/liveMedia/GenericMediaServer.cpp b/liveMedia/GenericMediaServer.cpp
+index 332ac2b..be8a07a 100644
+--- a/liveMedia/GenericMediaServer.cpp
++++ b/liveMedia/GenericMediaServer.cpp
+@@ -399,10 +399,9 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
+   // because that has a special use by some servers.  Similarly, we avoid choosing the same
+   // session id twice in a row.)
+   do {
+-    sessionId = (u_int32_t)our_random32();
++    sessionId = (u_int32_t)8888;
+     snprintf(sessionIdStr, sizeof sessionIdStr, "%08X", sessionId);
+-  } while (sessionId == 0 || sessionId == fPreviousClientSessionId
+-	   || lookupClientSession(sessionIdStr) != NULL);
++  } while (sessionId == 0 || lookupClientSession(sessionIdStr) != NULL);
+   fPreviousClientSessionId = sessionId;
+ 
+   ClientSession* clientSession = createNewClientSession(sessionId);
+diff --git a/testProgs/testOnDemandRTSPServer.cpp b/testProgs/testOnDemandRTSPServer.cpp
+index 3696a77..7c8ed7e 100644
+--- a/testProgs/testOnDemandRTSPServer.cpp
++++ b/testProgs/testOnDemandRTSPServer.cpp
+@@ -21,6 +21,9 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
+ #include "liveMedia.hh"
+ 
+ #include "BasicUsageEnvironment.hh"
++#include <signal.h>
++#include <unistd.h>
++
+ #include "announceURL.hh"
+ 
+ UsageEnvironment* env;
+@@ -40,6 +43,12 @@ static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
+ 
+ static char newDemuxWatchVariable;
+ 
++void sig_handler(int signo)
++{
++  if (signo == SIGUSR1)
++    exit(0);
++}
++
+ static MatroskaFileServerDemux* matroskaDemux;
+ static void onMatroskaDemuxCreation(MatroskaFileServerDemux* newDemux, void* /*clientData*/) {
+   matroskaDemux = newDemux;
+@@ -53,6 +62,7 @@ static void onOggDemuxCreation(OggFileServerDemux* newDemux, void* /*clientData*
+ }
+ 
+ int main(int argc, char** argv) {
++  signal(SIGUSR1, sig_handler);
+   // Begin by setting up our usage environment:
+   TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+   env = BasicUsageEnvironment::createNew(*scheduler);
+@@ -72,7 +82,7 @@ int main(int argc, char** argv) {
+   RTSPServer* rtspServer = RTSPServer::createNew(*env, 322, authDB);
+ #else
+   // Serve regular RTSP (over a TCP connection):
+-  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554, authDB);
++  RTSPServer* rtspServer = RTSPServer::createNew(*env, atoi(argv[1]), authDB);
+ #endif
+   if (rtspServer == NULL) {
+     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";

@@ -1,0 +1,29 @@
+# Binaries produced by "make".
+afl-analyze
+afl-as
+afl-clang
+afl-clang++
+afl-fuzz
+afl-g++
+afl-gcc
+afl-gotcpu
+afl-replay
+afl-showmap
+afl-tmin
+aflnet-replay
+aflnet.o
+as
+
+# Binaries produced by "make -C llvm_mode"
+afl-clang-fast
+afl-clang-fast++
+afl-llvm-pass.so
+afl-llvm-rt-32.o
+afl-llvm-rt-64.o
+afl-llvm-rt.o
+
+res_*
+benchmark/subjects/*/*/chatafl
+benchmark/subjects/*/*/chatafl-cl1
+benchmark/subjects/*/*/chatafl-cl2
+benchmark/subjects/*/*/aflnet

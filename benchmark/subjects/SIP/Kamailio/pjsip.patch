@@ -1,0 +1,12 @@
+diff --git a/pjsip/src/pjsua-lib/pjsua_core.c b/pjsip/src/pjsua-lib/pjsua_core.c
+index 3b75f7eae..5c8de8d03 100644
+--- a/pjsip/src/pjsua-lib/pjsua_core.c
++++ b/pjsip/src/pjsua-lib/pjsua_core.c
+@@ -899,6 +899,7 @@ static void init_random_seed(void)
+     pid = pj_getpid();
+     seed = pj_hash_calc(seed, &pid, sizeof(pid));
+ 
++    seed = 0;
+     /* Init random seed */
+     pj_srand(seed);
+ }

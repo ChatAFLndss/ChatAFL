@@ -1,0 +1,33 @@
+diff --git a/Source/main.c b/Source/main.c
+index a3393a1..79dcaa4 100644
+--- a/Source/main.c
++++ b/Source/main.c
+@@ -11,6 +11,8 @@
+ #include "ftpserv.h"
+ #include "cfgparse.h"
+ #include "x_malloc.h"
++#include <signal.h>
++#include <unistd.h>
+ 
+ FTP_CONFIG   g_cfg;
+ int          g_log = -1;
+@@ -18,6 +20,11 @@ int          g_log = -1;
+ static char  CAFILE[PATH_MAX], CERTFILE[PATH_MAX], KEYFILE[PATH_MAX], KEYFILE_PASS[256];
+ char         GOODBYE_MSG[MSG_MAXLEN];
+ 
++void sig_handler(int signo){
++	if (signo == SIGUSR1)
++		exit(0);
++}
++
+ gnutls_dh_params_t					dh_params = NULL;
+ gnutls_certificate_credentials_t	x509_cred = NULL;
+ gnutls_priority_t					priority_cache = NULL;
+@@ -36,6 +43,7 @@ int main(int argc, char *argv[])
+ 
+ 	struct in_addr na;
+ 
++	signal(SIGUSR1,sig_handler);
+ 	if (sizeof (off_t) != 8)
+ 	{
+ 		printf("off_t is not 64 bits long");

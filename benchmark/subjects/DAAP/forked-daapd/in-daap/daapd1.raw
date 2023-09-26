@@ -1,0 +1,157 @@
+GET /api/config HTTP/1.1
+
+GET /player/fonts/materialdesignicons-webfont.woff2 HTTP/1.1
+
+GET /api/outputs HTTP/1.1
+
+GET /api/spotify HTTP/1.1
+
+GET /api/search?type=album&expression=time_added+after+8+weeks+ago+and+media_kind+is+music+having+track_count+%3E+3+order+by+time_added+desc&limit=3 HTTP/1.1
+
+GET /api/library/artists?media_kind=music HTTP/1.1
+
+GET /api/library/artists/6812574504550889270 HTTP/1.1
+
+GET /api/library/albums/7888021095875713269 HTTP/1.1
+
+GET /artwork/group/6?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:6 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /api/library/artists/1267017029468087345 HTTP/1.1
+
+GET /api/library/albums/6721547971723107633 HTTP/1.1
+
+GET /artwork/group/1?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:2&position=0 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:1 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /api/library/artists/694971154903243579 HTTP/1.1
+
+GET /api/library/albums/3587305042194852879/tracks?limit=-1&offset=0 HTTP/1.1
+
+GET /artwork/group/5?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:track:5&shuffle=false&clear=true&playback=start HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+GET /api/player HTTP/1.1
+
+GET /artwork/group/3?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:album:310695667224764332&position=1 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /artwork/group/5?maxwidth=600&maxheight=600 HTTP/1.1
+
+GET /artwork/group/5?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:album:3587305042194852879 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+POST /api/queue/items/add?uris=library:album:7888021095875713269&position=1 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+GET /artwork/group/1?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:album:6721547971723107633 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+PUT /api/queue/items/198?new_position=2 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+PUT /api/queue/items/196?new_position=1 HTTP/1.1
+Content-Length: 0
+
+GET /api/queue HTTP/1.1
+
+DELETE /api/queue/items/199 HTTP/1.1
+
+GET /api/queue HTTP/1.1
+
+PUT /api/player/pause HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+PUT /api/player/play HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+GET /api/player HTTP/1.1
+
+PUT /api/queue/clear HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+GET /api/search?type=album&expression=time_added+after+8+weeks+ago+and+media_kind+is+music+having+track_count+%3E+3+order+by+time_added+desc&limit=3 HTTP/1.1
+
+GET /api/library/genres HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Indie-Rock%22 HTTP/1.1
+
+GET /api/library/albums/7888021095875713269/tracks?limit=-1&offset=0 HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Indie-Rock%22 HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Lo-Fi%22 HTTP/1.1
+
+GET /api/library/albums/3587305042194852879/tracks?limit=-1&offset=0 HTTP/1.1
+
+GET /artwork/group/5?maxwidth=600&maxheight=600 HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Lo-Fi%22 HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Pop%22 HTTP/1.1
+
+GET /api/library/albums/6721547971723107633/tracks?limit=-1&offset=0 HTTP/1.1
+
+GET /artwork/group/1?maxwidth=600&maxheight=600 HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Pop%22 HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Unknown+genre%22 HTTP/1.1
+
+GET /api/library/albums/310695667224764332 HTTP/1.1
+
+GET /artwork/group/3?maxwidth=600&maxheight=600 HTTP/1.1
+
+POST /api/queue/items/add?uris=library:album:310695667224764332&shuffle=false&clear=true&playback=start&playback_from_position=0 HTTP/1.1
+Content-Length: 0
+
+POST /api/queue/items/add?uris=library:album:310695667224764332&shuffle=false&clear=true&playback=start&playback_from_position=0 HTTP/1.1
+Content-Length: 0
+
+GET /api/player HTTP/1.1
+
+GET /api/search?type=albums&media_kind=music&expression=genre+is+%22Unknown+genre%22 HTTP/1.1
+
+GET /api/player HTTP/1.1
+
+GET /api/search?type=track,artist,album,playlist&media_kind=music&query=%22query%22+%7B+genre+is+%22Pop%22+%7D&limit=3&offset=0 HTTP/1.1
+

@@ -1,0 +1,149 @@
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 157fe5bc..ab1500b9 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -145,7 +145,8 @@ forked_daapd_SOURCES = main.c \
+ 	mxml-compat.h \
+ 	$(LIBWEBSOCKETS_SRC) \
+ 	$(GPERF_SRC) \
+-	$(ANTLR_SRC) 
++	$(ANTLR_SRC) \
++	../sqlext/sqlext.c
+ 
+ # built by maintainers, and distributed. Clean with maintainer-clean
+ BUILT_SOURCES = \
+diff --git a/src/db.c b/src/db.c
+index 25ec6673..d76212da 100644
+--- a/src/db.c
++++ b/src/db.c
+@@ -6736,6 +6736,8 @@ db_pragma_set_mmap_size(int mmap_size)
+ #undef Q_TMPL
+ }
+ 
++int sqlite3_extension_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
++
+ static int
+ db_open(void)
+ {
+@@ -6765,7 +6767,7 @@ db_open(void)
+     }
+ 
+   errmsg = NULL;
+-  ret = sqlite3_load_extension(hdl, PKGLIBDIR "/forked-daapd-sqlext.so", NULL, &errmsg);
++  ret = sqlite3_extension_init(hdl, &errmsg, NULL);
+   if (ret != SQLITE_OK)
+     {
+       if (errmsg)
+diff --git a/src/httpd.c b/src/httpd.c
+index ffb03d87..edaa980c 100644
+--- a/src/httpd.c
++++ b/src/httpd.c
+@@ -1430,6 +1430,9 @@ httpd_send_reply(struct evhttp_request *req, int code, const char *reason, struc
+   if (allow_origin)
+     evhttp_add_header(output_headers, "Access-Control-Allow-Origin", allow_origin);
+ 
++  if(evbuf)
++    evbuffer_add(evbuf, "\r\n", 2);
++
+   if (do_gzip && (gzbuf = httpd_gzip_deflate(evbuf)))
+     {
+       DPRINTF(E_DBG, L_HTTPD, "Gzipping response\n");
+diff --git a/src/httpd_daap.c b/src/httpd_daap.c
+index 37721c40..65698e1b 100644
+--- a/src/httpd_daap.c
++++ b/src/httpd_daap.c
+@@ -2439,7 +2439,7 @@ daap_init(void)
+   int i;
+   int ret;
+ 
+-  srand((unsigned)time(NULL));
++  srand(0);
+   current_rev = 2;
+   update_requests = NULL;
+ 
+diff --git a/src/main.c b/src/main.c
+index 58f12f56..d83e45b4 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -235,7 +235,7 @@ register_services(char *ffid, bool no_web, bool no_rsp, bool no_daap, bool no_mp
+   int i;
+   int ret;
+ 
+-  srand((unsigned int)time(NULL));
++  srand(0);
+ 
+   lib = cfg_getsec(cfg, "library");
+ 
+diff --git a/src/misc.c b/src/misc.c
+index 737cda81..e7166d18 100644
+--- a/src/misc.c
++++ b/src/misc.c
+@@ -1361,7 +1361,7 @@ mutex_init(pthread_mutex_t *mutex)
+   int err;
+ 
+   CHECK_ERR(L_MISC, pthread_mutexattr_init(&mattr));
+-  CHECK_ERR(L_MISC, pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_ERRORCHECK));
++  //CHECK_ERR(L_MISC, pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_ERRORCHECK));
+   err = pthread_mutex_init(mutex, &mattr);
+   CHECK_ERR(L_MISC, pthread_mutexattr_destroy(&mattr));
+ 
+diff --git a/src/outputs/raop.c b/src/outputs/raop.c
+index 3eebf9d9..b97f9820 100644
+--- a/src/outputs/raop.c
++++ b/src/outputs/raop.c
+@@ -616,7 +616,9 @@ raop_crypt_add_oaep_padding(uint8_t *em, const size_t emlen, const uint8_t *m, c
+   /* Step 6:
+    * Generate a random octet string seed of length hLen
+    */
+-  seed = gcry_random_bytes(hlen, GCRY_STRONG_RANDOM);
++  //seed = gcry_random_bytes(hlen, GCRY_STRONG_RANDOM);
++  seed = malloc(hlen);
++  memset(seed, 0, hlen);
+   if (!seed)
+     {
+       DPRINTF(E_LOG, L_RAOP, "Could not allocate memory for OAEP seed\n");
+@@ -1492,7 +1494,8 @@ raop_send_req_announce(struct raop_session *rs, evrtsp_req_cb cb, const char *lo
+     }
+ 
+   /* Session ID and session URL */
+-  gcry_randomize(&session_id, sizeof(session_id), GCRY_STRONG_RANDOM);
++  //gcry_randomize(&session_id, sizeof(session_id), GCRY_STRONG_RANDOM);
++  memset(&session_id, 0, sizeof(session_id));
+ 
+   if (family == AF_INET)
+     ret = snprintf(rs->session_url, sizeof(rs->session_url), "rtsp://%s/%u", address, session_id);
+@@ -1528,7 +1531,8 @@ raop_send_req_announce(struct raop_session *rs, evrtsp_req_cb cb, const char *lo
+   /* Challenge - but only if session is encrypted (important for ATV3 after update 6.0) */
+   if (rs->encrypt)
+     {
+-      gcry_randomize(challenge, sizeof(challenge), GCRY_STRONG_RANDOM);
++      //gcry_randomize(challenge, sizeof(challenge), GCRY_STRONG_RANDOM);
++      memset(challenge, 0, sizeof(challenge));
+       challenge_b64 = b64_encode(challenge, sizeof(challenge));
+       if (!challenge_b64)
+ 	{
+@@ -4868,8 +4872,10 @@ raop_init(void)
+   control_6svc.port = 0;
+ 
+   // Generate AES key and IV
+-  gcry_randomize(raop_aes_key, sizeof(raop_aes_key), GCRY_STRONG_RANDOM);
+-  gcry_randomize(raop_aes_iv, sizeof(raop_aes_iv), GCRY_STRONG_RANDOM);
++  //gcry_randomize(raop_aes_key, sizeof(raop_aes_key), GCRY_STRONG_RANDOM);
++  //gcry_randomize(raop_aes_iv, sizeof(raop_aes_iv), GCRY_STRONG_RANDOM);
++  memset(raop_aes_key, 0, sizeof(raop_aes_key));
++  memset(raop_aes_iv, 0, sizeof(raop_aes_iv));
+ 
+   // Setup AES
+   gc_err = gcry_cipher_open(&raop_aes_ctx, GCRY_CIPHER_AES, GCRY_CIPHER_MODE_CBC, 0);
+diff --git a/src/transcode.c b/src/transcode.c
+index 293a72d3..defd44ec 100644
+--- a/src/transcode.c
++++ b/src/transcode.c
+@@ -770,6 +770,7 @@ open_decoder(unsigned int *stream_index, struct decode_ctx *ctx, enum AVMediaTyp
+       avcodec_free_context(&dec_ctx);
+       return NULL;
+     }
++  dec_ctx->thread_count=1;
+ 
+   if (type == AVMEDIA_TYPE_AUDIO)
+     {

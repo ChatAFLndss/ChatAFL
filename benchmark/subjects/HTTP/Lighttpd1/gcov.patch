@@ -1,0 +1,12 @@
+diff --git a/src/server.c b/src/server.c
+index 44385db1..5b8c8e3a 100644
+--- a/src/server.c
++++ b/src/server.c
+@@ -231,6 +231,7 @@ static void sigaction_handler(int sig, siginfo_t *si, void *context) {
+ 			graceful_restart = 1;
+ 			graceful_shutdown = 1;
+ 			last_sigterm_info = *si;
++			exit(0);
+ 		}
+ 		break;
+ 	case SIGINT:
