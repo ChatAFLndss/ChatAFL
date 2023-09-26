@@ -14,7 +14,7 @@ ChatAFL-Artifact
 ├── ChatAFL: the source code of ChatAFL, with all strategies proposed in the paper
 ├── ChatAFL-CL1: ChatAFL, which only uses the structure-aware mutations (c.f. Ablation study) 
 ├── ChatAFL-CL2: ChatAFL, which only uses the structure-aware and initial seed enrichment (c.f. Ablation study)
-├── deps.sh: the script to install dependencies, asks for password when executed
+├── deps.sh: the script to install dependencies, asks for the password when executed
 ├── README: this file
 ├── run.sh: the execution script to run fuzzers on subjects and collect data
 └── setup.sh: the preparation script to set up docker images
@@ -45,7 +45,7 @@ Utilize the `run.sh` script to run experiments. The command is as follows:
  ./run.sh <container_number> <fuzzed_time> <subjects> <fuzzers>
 ```
 
-Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `run_time` indicates the running time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. As a short cut one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
+Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `run_time` indicates the running time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. In a short cut, one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
 
 When the script completes, in the `benchmark` directory a folder `result-<name of subject>` will be created, containing fuzzing results for each run. 
 
@@ -58,7 +58,7 @@ The `analyze.sh` script is used to analyze data and construct plots illustrating
 
 The script takes in 2 arguments - a regex for the subjects and the duration of the run to be analyzed. Note that, these arguments are optional and the script by default will process all `result-` folders and assume that the execution time is 1440 minutes, which is equal to 1 day. 
 
-Upon completion of execution, the script will process the archives by construcing csv files, containing the covered number of branches, states and state transitions over time. Furthermore, these csv files will be processed into PNG files which are plots, illustrating the average code and state coverage over time for fuzzers on each subject (`cov_over_time...` for the code and branch coverage, `state_over_time...` for the state and state transition coverage). All of this information is moved to a `res_` folder to the root directory with a timestamp. 
+Upon completion of execution, the script will process the archives by construcing csv files, containing the covered number of branches, states, and state transitions over time. Furthermore, these csv files will be processed into PNG files which are plots, illustrating the average code and state coverage over time for fuzzers on each subject (`cov_over_time...` for the code and branch coverage, `state_over_time...` for the state and state transition coverage). All of this information is moved to a `res_` folder in the root directory with a timestamp. 
 
 ### Cleaning Up
 
@@ -136,15 +136,15 @@ In `chat-llm.h`:
 
 ### Adding new subjects
 
-To add an extra subject, we refer to [the instructions, provied by ProfuzzBench](https://github.com/profuzzbench/profuzzbench#1-how-do-i-extend-profuzzbench) for adding a new benchmark subject. As an example we have added Lighttpd 1.4 as a new subject to the benchmark.
-
-### Limitations
-
-The current artifact interacts with OpenAI's Large Language Models (`davinci-003` and `gpt-3.5-turbo`). This puts a third party limit to the degree of parallelization. The models used in this artifact have a hard limit of 150,000 tokens per minute. Antoher limitation comes from regional quoats.
+To add an extra subject, we refer to [the instructions, provied by ProfuzzBench](https://github.com/profuzzbench/profuzzbench#1-how-do-i-extend-profuzzbench) for adding a new benchmark subject. As an example, we have added Lighttpd 1.4 as a new subject to the benchmark.
 
 ### Troubleshooting
 
 If the fuzzer terminates with an error, a premature "I am done" message will be displayed. To examine this issue, running `docker logs <containerID>` will display the logs of the failing container.
+
+## Limitations
+
+The current artifact interacts with OpenAI's Large Language Models (`davinci-003` and `gpt-3.5-turbo`). This puts a third-party limit to the degree of parallelization. The models used in this artifact have a hard limit of 150,000 tokens per minute. Another limitation comes from regional quotas.
 
 ## Special Thanks
 
