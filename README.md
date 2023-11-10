@@ -56,7 +56,7 @@ Utilize the `run.sh` script to run experiments. The command is as follows:
  ./run.sh <container_number> <fuzzed_time> <subjects> <fuzzers>
 ```
 
-Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `run_time` indicates the running time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. In a short cut, one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
+Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `fuzzed_time` indicates the running time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. In a short cut, one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
 
 When the script completes, in the `benchmark` directory a folder `result-<name of subject>` will be created, containing fuzzing results for each run. 
 
