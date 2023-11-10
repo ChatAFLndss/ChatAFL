@@ -20,6 +20,17 @@ ChatAFL-Artifact
 └── setup.sh: the preparation script to set up docker images
 ```
 
+## Citing ChatAFL
+ChatAFL has been accepted for publication at the 31st Annual Network and Distributed System Security Symposium (NDSS) 2024. If you use this code in your scientific work, please cite the paper as follows:
+
+```
+@inproceedings{chatafl,
+author={Ruijie Meng, Martin Mirchev, Marcel B{\"o}hme and Abhik Roychoudhury},
+title={Large Language Model guided Protocol Fuzzing},
+booktitle={Proceedings of the 31st Annual Network and Distributed System Security Symposium (NDSS)},
+year={2024},}
+```
+
 ## 1. Setup and Usage
 
 ### 1.1. Installing Dependencies
