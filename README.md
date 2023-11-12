@@ -16,6 +16,7 @@ ChatAFL-Artifact
 ├── ChatAFL-CL1: ChatAFL, which only uses the structure-aware mutations (c.f. Ablation study) 
 ├── ChatAFL-CL2: ChatAFL, which only uses the structure-aware and initial seed enrichment (c.f. Ablation study)
 ├── deps.sh: the script to install dependencies, asks for the password when executed
+├── nsfuzz-images: a collection of docker images of NSFuzz, provided in Zenodo
 ├── README: this file
 ├── run.sh: the execution script to run fuzzers on subjects and collect data
 └── setup.sh: the preparation script to set up docker images
@@ -43,15 +44,17 @@ year={2024},}
 ./deps.sh
 ```
 
-### 1.2. Preparing Docker Images [~40 minutes]
+### 1.2. Preparing Docker Images [~40-80 minutes]
 
 Run the following command to set up all docker images, including the subjects with all fuzzers:
+
+**If NSFuzz is used for evaluation, before running the `setup.sh` script, download the included tar.gz files from Zenodo and place them in the folder `nsfuzz-images`.**
 
 ```bash
 KEY=<OPENAI_API_KEY> setup.sh
 ```
 
-The process is estimated to take about 40 minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation.
+The process is estimated to take about 40 (80 if NSFuzz images are included) minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation.
 
 ### 1.3. Running Experiments
 
@@ -112,10 +115,10 @@ To conduct the experiments outlined in the paper, we utilized a vast amount of r
 
 ### 3.1. Comparison with Baselines [5 human-minutes + 180 compute-hours]
 
-ChatAFL can cover more states and code, and achieve the same state and code coverage faster than the baseline tool AFLNet. We run the following commands to support these claims:
+ChatAFL can cover more states and code, and achieve the same state and code coverage faster than the baseline tools AFLNet and NSFuzz. We run the following commands to support these claims:
 
 ```bash
-./run.sh 5 240 kamailio,pure-ftpd,live555 chatafl,aflnet
+./run.sh 5 240 kamailio,pure-ftpd,live555 chatafl,aflnet,nsfuzz
 ./analyze.sh kamailio,pure-ftpd,live555 240
 ```
 
