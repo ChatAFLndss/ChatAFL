@@ -5,6 +5,7 @@ ChatAFL is a protocol fuzzer guided by large language models (LLMs). It is built
 The ChatAFL artifact is configured within [ProfuzzBench](https://github.com/profuzzbench/profuzzbench), a widely-used benchmark for stateful fuzzing of network protocols. This allows for smooth integration with an already established format.
 
 ## Folder structure
+
 ```
 ChatAFL-Artifact
 ├── aflnet: a modified version of AFLNet which outputs states and state transitions 
@@ -21,6 +22,7 @@ ChatAFL-Artifact
 ```
 
 ## Citing ChatAFL
+
 ChatAFL has been accepted for publication at the 31st Annual Network and Distributed System Security Symposium (NDSS) 2024. The paper is also available [here](https://mengrj.github.io/files/chatafl.pdf). If you use this code in your scientific work, please cite the paper as follows:
 
 ```
@@ -36,45 +38,50 @@ year={2024},}
 ### 1.1. Installing Dependencies
 
 `Docker`, `Bash`, `Python3` with `pandas` and `matplotlib` libraries. We provide a helper script `deps.sh` which runs the required steps to ensure that all dependencies are provided:
-```
+
+```bash
 ./deps.sh
 ```
 
 ### 1.2. Preparing Docker Images [~40 minutes]
 
 Run the following command to set up all docker images, including the subjects with all fuzzers:
-```
+
+```bash
 KEY=<OPENAI_API_KEY> setup.sh
 ```
 
-The process is estimated to take about 40 minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation. 
+The process is estimated to take about 40 minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation.
 
 ### 1.3. Running Experiments
 
 Utilize the `run.sh` script to run experiments. The command is as follows:
-```
+
+```bash
  ./run.sh <container_number> <fuzzed_time> <subjects> <fuzzers>
 ```
 
 Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `fuzzed_time` indicates the running time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. In a short cut, one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
 
-When the script completes, in the `benchmark` directory a folder `result-<name of subject>` will be created, containing fuzzing results for each run. 
+When the script completes, in the `benchmark` directory a folder `result-<name of subject>` will be created, containing fuzzing results for each run.
 
 ### 1.4. Analyzing Results
 
 The `analyze.sh` script is used to analyze data and construct plots illustrating the average code and state coverage over time for fuzzers on each subject. The script is executed using the following command:
-```
-./analyze.sh <pattern for subjects> <fuzzed_time in minutes> 
+
+```bash
+./analyze.sh <subjects> <fuzzed_time> 
 ```
 
-The script takes in 2 arguments - a regex for the subjects and the duration of the run to be analyzed. Note that, these arguments are optional and the script by default will process all `result-` folders and assume that the execution time is 1440 minutes, which is equal to 1 day. 
+The script takes in 2 arguments - `subjects` is the list of subjects under test and `fuzzed_time` is the duration of the run to be analyzed. Note that, the second argument is optional and the script by default will assume that the execution time is 1440 minutes, which is equal to 1 day. For example, the command (`analyze.sh exim 240`) will analyze the first 4 hours of the execution results of the exim subject.
 
-Upon completion of execution, the script will process the archives by construcing csv files, containing the covered number of branches, states, and state transitions over time. Furthermore, these csv files will be processed into PNG files which are plots, illustrating the average code and state coverage over time for fuzzers on each subject (`cov_over_time...` for the code and branch coverage, `state_over_time...` for the state and state transition coverage). All of this information is moved to a `res_` folder in the root directory with a timestamp. 
+Upon completion of execution, the script will process the archives by construcing csv files, containing the covered number of branches, states, and state transitions over time. Furthermore, these csv files will be processed into PNG files which are plots, illustrating the average code and state coverage over time for fuzzers on each subject (`cov_over_time...` for the code and branch coverage, `state_over_time...` for the state and state transition coverage). All of this information is moved to a `res_<subject name>` folder in the root directory with a timestamp.
 
 ### 1.5. Cleaning Up
 
 When the evaluation of the artifact is completed, running the `clean.sh` script will ensure that the only leftover files are in this directory:
-```
+
+```bash
 ./clean.sh
 ```
 
@@ -106,21 +113,24 @@ To conduct the experiments outlined in the paper, we utilized a vast amount of r
 ### 3.1. Comparison with Baselines [5 human-minutes + 180 compute-hours]
 
 ChatAFL can cover more states and code, and achieve the same state and code coverage faster than the baseline tool AFLNet. We run the following commands to support these claims:
-```
+
+```bash
 ./run.sh 5 240 kamailio,pure-ftpd,live555 chatafl,aflnet
-./analyze.sh ".*" 240
+./analyze.sh kamailio,pure-ftpd,live555 240
 ```
 
-Upon completion of the commands, a folder prefixed with `res_` will be generated. This folder contains PNG files illustrating the state and code covered by two fuzzers over time as well as the output archives from all the runs. It will be placed in the root directory of the artifact. 
+Upon completion of the commands, a folder prefixed with `res_` will be generated. This folder contains PNG files illustrating the state and code covered by two fuzzers over time as well as the output archives from all the runs. It will be placed in the root directory of the artifact.
 
 ### 3.2. Ablation Study [5 human-minutes + 180 compute-hours]
 
 Each strategy proposed in ChatAFL contributes to varying degrees of improvement in code coverage. We run the following commands to support this claim:
-```
+
+```bash
 ./run.sh 5 240 proftpd,exim chatafl,chatafl-cl1,chatafl-cl2
-./analyze.sh ".*" 240
+./analyze.sh proftpd,exim 240
 ```
-Upon completion of the commands, a folder prefixed with `res_` will be generated. This folder contains PNG files illustrating the code covered by three fuzzers over time as well as the output archives from all the runs. It will be placed in the root directory of the artifact. 
+
+Upon completion of the commands, a folder prefixed with `res_` will be generated. This folder contains PNG files illustrating the code covered by three fuzzers over time as well as the output archives from all the runs. It will be placed in the root directory of the artifact.
 
 ## 4. Customization
 
@@ -133,11 +143,13 @@ If a modification is done to any of the fuzzers, re-executing `setup.sh` will re
 All parameters, used in the experiments are located in `config.h` and `chat-llm.h`. The parameters, specific to ChatAFL are:
 
 In `config.h`:
-* EPSILON_CHOICE      
-* UNINTERESTING_THRESHOLD 
+
+* EPSILON_CHOICE
+* UNINTERESTING_THRESHOLD
 * CHATTING_THRESHOLD  
 
 In `chat-llm.h`:
+
 * STALL_RETRIES
 * GRAMMAR_RETRIES
 * MESSAGE_TYPE_RETRIES
@@ -162,4 +174,5 @@ The current artifact interacts with OpenAI's Large Language Models (`davinci-003
 We would like to thank the creators of [AFLNet](https://github.com/aflnet/aflnet) and [ProFuzzBench](https://github.com/profuzzbench/profuzzbench) for the tooling and infrastructure they have provided to the community.
 
 ## 7. License
+
 This artifact is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
