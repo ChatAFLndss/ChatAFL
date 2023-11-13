@@ -31,13 +31,3 @@ done;
 PFBENCH="$PWD/benchmark"
 cd $PFBENCH
 PFBENCH=$PFBENCH scripts/execution/profuzzbench_build_all.sh
-
-# Build the NSFuzz images, if provided
-
-if [ -d "nsfuzz-images" ]; then
-  echo "Building NSFuzz images"
-  for x in nsfuzz-images/* ;
-  do
-  docker load < $x
-  done
-fi

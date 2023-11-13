@@ -16,7 +16,6 @@ ChatAFL-Artifact
 ├── ChatAFL-CL1: ChatAFL, which only uses the structure-aware mutations (c.f. Ablation study) 
 ├── ChatAFL-CL2: ChatAFL, which only uses the structure-aware and initial seed enrichment (c.f. Ablation study)
 ├── deps.sh: the script to install dependencies, asks for the password when executed
-├── nsfuzz-images: a collection of docker images of NSFuzz, provided in Zenodo
 ├── README: this file
 ├── run.sh: the execution script to run fuzzers on subjects and collect data
 └── setup.sh: the preparation script to set up docker images
@@ -44,17 +43,15 @@ year={2024},}
 ./deps.sh
 ```
 
-### 1.2. Preparing Docker Images [~40-80 minutes]
+### 1.2. Preparing Docker Images [~40 minutes]
 
 Run the following command to set up all docker images, including the subjects with all fuzzers:
 
-**If NSFuzz is used for evaluation, before running the `setup.sh` script, download the included tar.gz files from Zenodo and place them in the folder `nsfuzz-images`.**
-
 ```bash
-KEY=<OPENAI_API_KEY> setup.sh
+KEY=<OPENAI_API_KEY> ./setup.sh
 ```
 
-The process is estimated to take about 40 (80 if NSFuzz images are included) minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation.
+The process is estimated to take about 40 minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation.
 
 ### 1.3. Running Experiments
 
@@ -64,7 +61,7 @@ Utilize the `run.sh` script to run experiments. The command is as follows:
  ./run.sh <container_number> <fuzzed_time> <subjects> <fuzzers>
 ```
 
-Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `fuzzed_time` indicates the running time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. In a short cut, one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
+Where `container_number` specifies how many containers are created to run a single fuzzer on a particular subject (each container runs one fuzzer on one subject). `fuzzed_time` indicates the fuzzing time in minutes. `subjects` is the list of subjects under test, and `fuzzers` is the list of fuzzers that are utilized to fuzz subjects. For example, the command (`run.sh 1 5 pure-ftpd chatafl`) would create 1 container for the fuzzer ChatAFL to fuzz the subject pure-ftpd for 5 minutes. In a short cut, one can execute all fuzzers and all subjects by using the writing `all` in place of the subject and fuzzer list.
 
 When the script completes, in the `benchmark` directory a folder `result-<name of subject>` will be created, containing fuzzing results for each run.
 
@@ -115,10 +112,10 @@ To conduct the experiments outlined in the paper, we utilized a vast amount of r
 
 ### 3.1. Comparison with Baselines [5 human-minutes + 180 compute-hours]
 
-ChatAFL can cover more states and code, and achieve the same state and code coverage faster than the baseline tools AFLNet and NSFuzz. We run the following commands to support these claims:
+ChatAFL can cover more states and code, and achieve the same state and code coverage faster than the baseline tool AFLNet. We run the following commands to support these claims:
 
 ```bash
-./run.sh 5 240 kamailio,pure-ftpd,live555 chatafl,aflnet,nsfuzz
+./run.sh 5 240 kamailio,pure-ftpd,live555 chatafl,aflnet
 ./analyze.sh kamailio,pure-ftpd,live555 240
 ```
 

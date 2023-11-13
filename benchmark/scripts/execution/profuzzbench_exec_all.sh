@@ -104,11 +104,6 @@ do
                 profuzzbench_exec_common.sh proftpd $NUM_CONTAINERS results-proftpd aflnet out-proftpd-aflnet "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
-            if [[ $FUZZER == "nsfuzz" ]] || [[ $FUZZER == "all" ]]
-            then
-                profuzzbench_exec_common.sh proftpd-state-machines $NUM_CONTAINERS results-proftpd nsfuzz-v-afl out-proftpd-nsfuzz "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
-            fi
-
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh proftpd $NUM_CONTAINERS results-proftpd chatafl out-proftpd-chatafl "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
@@ -135,11 +130,6 @@ do
             if [[ $FUZZER == "aflnet" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh pure-ftpd $NUM_CONTAINERS results-pure-ftpd aflnet out-pure-ftpd-aflnet "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
-            fi
-
-            if [[ $FUZZER == "nsfuzz" ]] || [[ $FUZZER == "all" ]]
-            then
-                profuzzbench_exec_common.sh pure-ftpd-state-machines $NUM_CONTAINERS results-pure-ftpd nsfuzz-v-afl out-pure-ftpd-nsfuzz "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
@@ -173,12 +163,6 @@ do
                 profuzzbench_exec_common.sh exim $NUM_CONTAINERS results-exim aflnet out-exim-aflnet "-P SMTP -D 10000 -q 3 -s 3 -E -K -W 100 -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
-            if [[ $FUZZER == "nsfuzz" ]] || [[ $FUZZER == "all" ]]
-            then
-                profuzzbench_exec_common.sh exim-state-machines $NUM_CONTAINERS results-exim nsfuzz-v-afl out-exim-nsfuzz "-P SMTP -D 10000 -q 3 -s 3 -E -K -W 100 -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
-            fi
-
-
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh exim $NUM_CONTAINERS results-exim chatafl out-exim-chatafl "-P SMTP -D 10000 -q 3 -s 3 -E -K -W 100 -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
@@ -208,11 +192,6 @@ do
             if [[ $FUZZER == "aflnet" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh live555 $NUM_CONTAINERS results-live555 aflnet out-live555-aflnet "-P RTSP -D 10000 -q 3 -s 3 -E -K -R -m none" $TIMEOUT $SKIPCOUNT &
-            fi
-
-            if [[ $FUZZER == "nsfuzz" ]] || [[ $FUZZER == "all" ]]
-            then
-                profuzzbench_exec_common.sh live555-state-machines $NUM_CONTAINERS results-live555 nsfuzz-v-afl out-live555-nsfuzz "-P RTSP -D 10000 -q 3 -s 3 -E -K -R -m none" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
@@ -245,12 +224,6 @@ do
             then
                 profuzzbench_exec_common.sh kamailio $NUM_CONTAINERS results-kamailio aflnet out-kamailio-aflnet "-m none -P SIP -l 5061 -D 50000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
-
-            if [[ $FUZZER == "nsfuzz" ]] || [[ $FUZZER == "all" ]]
-            then
-                profuzzbench_exec_common.sh kamailio-state-machines $NUM_CONTAINERS results-kamailio nsfuzz-v-afl out-kamailio-nsfuzz "-m none -P SIP -l 5061 -D 50000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
-            fi
-
             
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
             then
@@ -280,11 +253,6 @@ do
             if [[ $FUZZER == "aflnet" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh forked-daapd $NUM_CONTAINERS results-forked-daapd aflnet out-forked-daapd-aflnet "-P HTTP -D 200000 -m none -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
-            fi
-
-            if [[ $FUZZER == "nsfuzz" ]] || [[ $FUZZER == "all" ]]
-            then
-                profuzzbench_exec_common.sh forked-daapd-state-machines $NUM_CONTAINERS results-forked-daapd nsfuzz-v-afl out-forked-daapd-nsfuzz "-P HTTP -D 200000 -m none -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
