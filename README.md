@@ -27,7 +27,7 @@ ChatAFL has been accepted for publication at the 31st Annual Network and Distrib
 
 ```
 @inproceedings{chatafl,
-author={Ruijie Meng, Martin Mirchev, Marcel B{\"o}hme and Abhik Roychoudhury},
+author={Ruijie Meng and Martin Mirchev and Marcel B\"{o}hme and Abhik Roychoudhury},
 title={Large Language Model guided Protocol Fuzzing},
 booktitle={Proceedings of the 31st Annual Network and Distributed System Security Symposium (NDSS)},
 year={2024},}
