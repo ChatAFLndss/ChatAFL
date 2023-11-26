@@ -1,6 +1,11 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10115151.svg)](https://doi.org/10.5281/zenodo.10115151)
+
 # ChatAFL Artifact
 
-ChatAFL is a protocol fuzzer guided by large language models (LLMs). It is built on top of [AFLNet](https://github.com/aflnet/aflnet) but integrates with three concrete components. Firstly, the fuzzer uses the LLM to extract a machine-readable grammar for a protocol that is used for structure-aware mutation. Secondly, the fuzzer uses the LLM to increase the diversity of messages in the recorded message sequences that are used as initial seeds. Lastly, the fuzzer uses the LLM to break out of a coverage plateau, where the LLM is prompted to generate messages to reach new states.
+<img align="right" src="https://github.com/ChatAFLndss/ChatAFL/assets/7456946/266f7d4f-c0af-4846-9e13-064e79c812b0">
+
+
+ChatAFL is a protocol fuzzer guided by large language models (LLMs). It is built on top of [AFLNet](https://github.com/aflnet/aflnet) but integrates with three concrete components. Firstly, the fuzzer uses the LLM to extract a machine-readable grammar for a protocol that is used for structure-aware mutation. Secondly, the fuzzer uses the LLM to increase the diversity of messages in the recorded message sequences that are used as initial seeds. Lastly, the fuzzer uses the LLM to break out of a coverage plateau, where the LLM is prompted to generate messages to reach new states. 
 
 The ChatAFL artifact is configured within [ProfuzzBench](https://github.com/profuzzbench/profuzzbench), a widely-used benchmark for stateful fuzzing of network protocols. This allows for smooth integration with an already established format.
 
