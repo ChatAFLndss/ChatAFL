@@ -56,7 +56,7 @@ Run the following command to set up all docker images, including the subjects wi
 KEY=<OPENAI_API_KEY> ./setup.sh
 ```
 
-The process is estimated to take about 40 minutes. We provide an OpenAI API key in the artifact appendix for the artifact evaluation.
+The process is estimated to take about 40 minutes. OPENAI_API_KEY is your OpenAI key and please refer to [this](https://openai.com/) about how to obtain a key.
 
 ### 1.3. Running Experiments
 
