@@ -48,7 +48,7 @@ char *chat_with_llm(char *prompt, char *model, int tries, float temperature)
     CURLcode res = CURLE_OK;
     char *answer = NULL;
     char *url = NULL;
-    if (strcmp(model, "davinci") == 0)
+    if (strcmp(model, "instruct") == 0)
     {
         url = "https://api.openai.com/v1/completions";
     }
@@ -60,9 +60,9 @@ char *chat_with_llm(char *prompt, char *model, int tries, float temperature)
     char *content_header = "Content-Type: application/json";
     char *accept_header = "Accept: application/json";
     char *data = NULL;
-    if (strcmp(model, "davinci") == 0)
+    if (strcmp(model, "instruct") == 0)
     {
-        asprintf(&data, "{\"model\": \"text-davinci-003\", \"prompt\": \"%s\", \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_TOKENS, temperature);
+        asprintf(&data, "{\"model\": \"gpt-3.5-turbo-instruct\", \"prompt\": \"%s\", \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_TOKENS, temperature);
     }
     else
     {
@@ -104,7 +104,7 @@ char *chat_with_llm(char *prompt, char *model, int tries, float temperature)
                     const char *data;
 
                     // The answer begins with a newline character, so we remove it
-                    if (strcmp(model, "davinci") == 0)
+                    if (strcmp(model, "instruct") == 0)
                     {
                         json_object *jobj4 = json_object_object_get(first_choice, "text");
                         data = json_object_get_string(jobj4);
@@ -779,7 +779,7 @@ void get_protocol_message_types(char *state_prompt, khash_t(strSet) * states_set
 
     for (int i = 0; i < CONFIDENT_TIMES; i++)
     {
-        char *state_answer = chat_with_llm(state_prompt, "davinci", MESSAGE_TYPE_RETRIES, 0.5);
+        char *state_answer = chat_with_llm(state_prompt, "instruct", MESSAGE_TYPE_RETRIES, 0.5);
         if (state_answer == NULL)
             continue;
         // printf("## Answer from LLM:\n %s\n", state_answer);
@@ -965,7 +965,7 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     ck_free(missing_fields_seq);
     json_object_put(sequence_escaped);
 
-    char *response = chat_with_llm(prompt, "davinci", ENRICHMENT_RETRIES, 0.5);
+    char *response = chat_with_llm(prompt, "instruct", ENRICHMENT_RETRIES, 0.5);
 
     free(prompt);
 
@@ -1002,7 +1002,7 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
 //     // char *prompt = NULL;
 //     // asprintf(&prompt, "user: The colors of flowers:\\nassistant: red and yellow.\\nuser: Other colors are:");
 //     // printf("## Prompt to LLM:\n %s\n", prompt);
-//     // char *answer = chat_with_llm(prompt, "davinci");
+//     // char *answer = chat_with_llm(prompt, "instruct");
 //     // printf("## Answer from LLM:\n %s\n", answer);
 
 //     char *protocol_name = argv[1];
