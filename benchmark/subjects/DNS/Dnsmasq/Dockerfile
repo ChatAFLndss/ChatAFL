@@ -86,7 +86,7 @@ ENV ASAN_OPTIONS='abort_on_error=1:symbolize=0:detect_leaks=0:detect_stack_use_a
 
 # Download and compile Dnsmasq for fuzzing
 RUN cd $WORKDIR && \
-    git clone git://thekelleys.org.uk/dnsmasq.git && \
+    git clone http://thekelleys.org.uk/git/dnsmasq.git && \
     cd dnsmasq && \
     git checkout v2.73rc6 && \
     patch -p1 < ${WORKDIR}/dnsmasq.patch && \
@@ -94,7 +94,7 @@ RUN cd $WORKDIR && \
 
 # Download and compile Dnsmasq for coverage analysis
 RUN cd $WORKDIR && \
-    git clone git://thekelleys.org.uk/dnsmasq.git dnsmasq-gcov && \
+    git clone http://thekelleys.org.uk/git/dnsmasq.git dnsmasq-gcov && \
     cd dnsmasq-gcov && \
     git checkout v2.73rc6 && \
     patch -p1 < ${WORKDIR}/dnsmasq.patch && \
