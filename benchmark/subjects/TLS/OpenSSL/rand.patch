@@ -1,0 +1,22 @@
+diff --git a/apps/openssl.c b/apps/openssl.c
+index 558f662e14..481ac2b4b0 100644
+--- a/apps/openssl.c
++++ b/apps/openssl.c
+@@ -33,6 +33,8 @@
+ /* Special sentinel to exit the program. */
+ #define EXIT_THE_PROGRAM (-1)
+ 
++#include "../fuzz/rand.inc"
++
+ /*
+  * The LHASH callbacks ("hash" & "cmp") have been replaced by functions with
+  * the base prototypes (we cast each variable inside the function to the
+@@ -239,6 +241,8 @@ int main(int argc, char *argv[])
+     arg.argv = NULL;
+     arg.size = 0;
+ 
++    FuzzerSetRand();
++
+     /* Set up some of the environment. */
+     default_config_file = make_config_name();
+     bio_in = dup_bio_in(FORMAT_TEXT);

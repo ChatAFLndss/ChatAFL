@@ -1,0 +1,66 @@
+diff --git a/Makefile b/Makefile
+index 564cc08..921468c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -20,13 +20,20 @@ VERSION:=0.8.6
+ DTLS_SUPPORT   ?= posix
+ LOG_LEVEL_DTLS ?= LOG_LEVEL_INFO
+ 
++# With coverage or not
++ifdef cov
++COV =  -fprofile-arcs -ftest-coverage
++else
++COV =
++endif
++
+ # files and flags
+ SOURCES = dtls.c dtls-crypto.c dtls-ccm.c dtls-hmac.c netq.c dtls-peer.c
+ SOURCES+= dtls-log.c
+ SOURCES+= aes/rijndael.c ecc/ecc.c sha2/sha2.c $(DTLS_SUPPORT)/dtls-support.c
+ OBJECTS:= $(SOURCES:.c=.o)
+ # CFLAGS:=-Wall -pedantic -std=c99 -g -O2 -I. -I$(DTLS_SUPPORT)
+-CFLAGS:=-DLOG_LEVEL_DTLS=$(LOG_LEVEL_DTLS) -Wall -std=c99 -g -O2 -I. -I$(DTLS_SUPPORT)
++CFLAGS:=-DLOG_LEVEL_DTLS=$(LOG_LEVEL_DTLS) $(COV) -Wall -std=c99 -g -O2 -I. -I$(DTLS_SUPPORT)
+ LIB:=libtinydtls.a
+ LDFLAGS:=
+ ARFLAGS:=cru
+diff --git a/tests/dtls-server.c b/tests/dtls-server.c
+index ab8f316..b1db186 100644
+--- a/tests/dtls-server.c
++++ b/tests/dtls-server.c
+@@ -43,13 +43,12 @@ static const unsigned char ecdsa_pub_key_y[] = {
+ 			0xD0, 0x43, 0xB1, 0xFB, 0x03, 0xE2, 0x2F, 0x4D,
+ 			0x17, 0xDE, 0x43, 0xF9, 0xF9, 0xAD, 0xEE, 0x70};
+ 
+-#if 0
++static int quit = 0;
+ /* SIGINT handler: set quit to 1 for graceful termination */
+-void
+-handle_sigint(int signum) {
+-  dsrv_stop(dsrv_get_context());
++void handle_sigusr1(int signum) {
++  quit = 1;
+ }
+-#endif
++
+ #ifdef DTLS_PSK
+ /* This function is the "key store" for tinyDTLS. It is called to
+  * retrieve a key for the given identity within this particular
+@@ -262,6 +261,8 @@ main(int argc, char **argv) {
+   int on = 1;
+   struct sockaddr_in6 listen_addr;
+ 
++  signal(SIGUSR1, handle_sigusr1);
++
+   memset(&listen_addr, 0, sizeof(struct sockaddr_in6));
+ 
+   /* fill extra field for 4.4BSD-based systems (see RFC 3493, section 3.4) */
+@@ -328,7 +329,7 @@ main(int argc, char **argv) {
+ 
+   dtls_set_handler(the_context, &cb);
+ 
+-  while (1) {
++  while (!quit) {
+     FD_ZERO(&rfds);
+     FD_ZERO(&wfds);
+ 

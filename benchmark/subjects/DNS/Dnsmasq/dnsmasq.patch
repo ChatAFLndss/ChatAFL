@@ -1,0 +1,36 @@
+diff --git a/src/dnsmasq.c b/src/dnsmasq.c
+index 19a6428..9493d74 100644
+--- a/src/dnsmasq.c
++++ b/src/dnsmasq.c
+@@ -134,7 +134,7 @@ int main (int argc, char **argv)
+      open to /dev/null. Normally we'll be started with 0, 1 and 2 open, 
+      but it's not guaranteed. By opening /dev/null three times, we 
+      ensure that we're not using those fds for real stuff. */
+-  for (i = 0; i < max_fd; i++)
++  for (i = 0; i < 1024; i++)
+     if (i != STDOUT_FILENO && i != STDERR_FILENO && i != STDIN_FILENO)
+       close(i);
+     else
+diff --git a/src/util.c b/src/util.c
+index 9299703..1f419c4 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -37,7 +37,7 @@ static int outleft = 0;
+ 
+ void rand_init()
+ {
+-  int fd = open(RANDFILE, O_RDONLY);
++  /*int fd = open(RANDFILE, O_RDONLY);
+   
+   if (fd == -1 ||
+       !read_write(fd, (unsigned char *)&seed, sizeof(seed), 1) ||
+@@ -45,6 +45,9 @@ void rand_init()
+     die(_("failed to seed the random number generator: %s"), NULL, EC_MISC);
+   
+   close(fd);
++  */
++  memset(seed, 0, sizeof(seed));
++  memset(in, 0, sizeof(in));
+ }
+ 
+ #define ROTATE(x,b) (((x) << (b)) | ((x) >> (32 - (b))))

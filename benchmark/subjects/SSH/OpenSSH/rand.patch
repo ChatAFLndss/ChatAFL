@@ -1,0 +1,36 @@
+diff --git a/openbsd-compat/arc4random.c b/openbsd-compat/arc4random.c
+index 1f0d6be..2808d39 100644
+--- a/openbsd-compat/arc4random.c
++++ b/openbsd-compat/arc4random.c
+@@ -33,6 +33,9 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++#undef HAVE_ARC4RANDOM_BUF
++#undef HAVE_ARC4RANDOM_UNIFORM
++
+ #ifndef HAVE_ARC4RANDOM
+ 
+ #ifdef WITH_OPENSSL
+diff --git a/sshd.c b/sshd.c
+index e6fe9f6..d32234e 100644
+--- a/sshd.c
++++ b/sshd.c
+@@ -123,6 +123,8 @@
+ #include "version.h"
+ #include "ssherr.h"
+ 
++#include "rand.inc"
++
+ /* Re-exec fds */
+ #define REEXEC_DEVCRYPTO_RESERVED_FD	(STDERR_FILENO + 1)
+ #define REEXEC_STARTUP_PIPE_FD		(STDERR_FILENO + 2)
+@@ -1375,6 +1377,8 @@ main(int ac, char **av)
+ 
+ 	ssh_malloc_init();	/* must be called before any mallocs */
+ 
++	FuzzerSetRand();
++
+ #ifdef HAVE_SECUREWARE
+ 	(void)set_auth_parameters(ac, av);
+ #endif

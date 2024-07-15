@@ -1,0 +1,45 @@
+FROM openssh
+
+# Import environment variable to pass as parameter to make (e.g., to make parallel builds with -j)
+ARG MAKE_OPT
+
+# Set up StateAFL
+ENV STATEAFL="/home/ubuntu/stateafl"
+ENV REPLAYER_CFLAGS="-DSEND_DELAY=200000 -DLOCAL_PORT=30000"
+ENV STATEAFL_CFLAGS="-DBLACKLIST_ALLOC_SITES"
+
+RUN git clone https://github.com/stateafl/stateafl.git $STATEAFL && \
+    cd $STATEAFL && \
+    CFLAGS="${REPLAYER_CFLAGS}" make clean all $MAKE_OPT && \
+    rm as && \
+    cd llvm_mode && CFLAGS="${STATEAFL_CFLAGS}" make $MAKE_OPT
+
+# Set up environment variables for StateAFL
+ENV AFL_PATH=${STATEAFL}
+ENV PATH=${STATEAFL}:${PATH}
+
+# Dedicated instrumented version for StateAFL
+RUN cd ${WORKDIR} && \
+    git clone https://github.com/vegard/openssh-portable.git openssh-stateafl && \
+    cd openssh-stateafl && \
+    git checkout 7cfea58 && \
+    cp ${WORKDIR}/rand.inc . && \
+    patch -p1 < ${WORKDIR}/rand.patch && \
+    autoreconf && \
+    ./configure \
+    CC=${STATEAFL}/afl-clang-fast \
+    CFLAGS="-g -O3" \
+    --prefix=$PWD/install \
+    --with-openssl=$WORKDIR/openssl-install \
+    CFLAGS="-I$WORKDIR/openssl-install/include" \
+    --with-ldflags="-L$WORKDIR/openssl-install/lib" \
+    --with-privsep-path=$PWD/var-empty \
+    --with-sandbox=no \
+    --with-privsep-user=ubuntu && \
+    make $MAKE_OPT && \
+    make install
+
+COPY --chown=ubuntu:ubuntu in-ssh-replay ${WORKDIR}/in-ssh-replay
+COPY --chown=ubuntu:ubuntu run-stateafl.sh ${WORKDIR}/run-stateafl
+COPY --chown=ubuntu:ubuntu blacklist_alloc.sh ${WORKDIR}/blacklist_alloc.sh
+

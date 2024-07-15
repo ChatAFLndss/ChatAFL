@@ -1,0 +1,52 @@
+FROM dcmtk
+
+# Import environment variable to pass as parameter to make (e.g., to make parallel builds with -j)
+ARG MAKE_OPT
+
+# Set up StateAFL
+ENV STATEAFL="/home/ubuntu/stateafl"
+ENV STATEAFL_CFLAGS="-DBLACKLIST_ALLOC_SITES"
+
+RUN git clone https://github.com/stateafl/stateafl.git $STATEAFL && \
+    cd $STATEAFL && \
+    make clean all $MAKE_OPT && \
+    rm as && \
+    cd llvm_mode && CFLAGS="${STATEAFL_CFLAGS}" make $MAKE_OPT
+
+# Set up environment variables for StateAFL
+ENV AFL_PATH=${STATEAFL}
+ENV PATH=${STATEAFL}:${PATH}
+
+COPY --chown=ubuntu:ubuntu buffer.patch ${WORKDIR}/buffer.patch
+COPY --chown=ubuntu:ubuntu in-dicom-replay ${WORKDIR}/in-dicom-replay
+
+# Dedicated instrumented version for StateAFL
+RUN cd $WORKDIR && \
+    git clone https://github.com/DCMTK/dcmtk dcmtk-stateafl && \
+    cd dcmtk-stateafl && \
+    git checkout 7f8564c && \
+    patch -p1 < $WORKDIR/fuzzing.patch && \
+    patch -p1 < $WORKDIR/buffer.patch && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make dcmqrscp $MAKE_OPT
+
+
+COPY --chown=ubuntu:ubuntu run-stateafl.sh ${WORKDIR}/run-stateafl
+COPY --chown=ubuntu:ubuntu blacklist_alloc.sh ${WORKDIR}/blacklist_alloc.sh
+
+RUN cd $WORKDIR/dcmtk-stateafl/build/bin && \
+    mkdir ACME_STORE && \
+    cp $WORKDIR/dcmqrscp.cfg ./
+
+# For deterministic timestamps
+RUN cd ${WORKDIR} && \
+    git clone https://github.com/stateafl/libfaketime-asan-fixed libfaketime-asan-fixed && \
+    cd libfaketime-asan-fixed && \
+    git checkout 7e46ea4 && \
+    cd src && \
+    make
+
+ENV LD_PRELOAD=$WORKDIR/libfaketime-asan-fixed/src/libfaketime.so.1
+ENV FAKETIME="2000-01-01 11:12:13"
+ENV FAKETIME_ONLY_CMDS="dcmqrscp"

@@ -1,0 +1,29 @@
+FROM dnsmasq
+
+# Import environment variable to pass as parameter to make (e.g., to make parallel builds with -j)
+ARG MAKE_OPT
+
+# Set up StateAFL
+ENV STATEAFL="/home/ubuntu/stateafl"
+
+RUN git clone https://github.com/stateafl/stateafl.git $STATEAFL && \
+    cd $STATEAFL && \
+    make clean all $MAKE_OPT && \
+    rm as && \
+    cd llvm_mode && make $MAKE_OPT
+
+# Set up environment variables for StateAFL
+ENV AFL_PATH=${STATEAFL}
+ENV PATH=${STATEAFL}:${PATH}
+
+# Dedicated instrumented version for StateAFL
+RUN cd $WORKDIR && \
+    git clone git://thekelleys.org.uk/dnsmasq.git dnsmasq-stateafl && \
+    cd dnsmasq-stateafl && \
+    git checkout v2.73rc6 && \
+    patch -p1 < ${WORKDIR}/dnsmasq.patch && \
+    CC=${STATEAFL}/afl-clang-fast make $MAKE_OPT
+
+COPY --chown=ubuntu:ubuntu in-dns-replay ${WORKDIR}/in-dns-replay
+COPY --chown=ubuntu:ubuntu run-stateafl.sh ${WORKDIR}/run-stateafl
+
