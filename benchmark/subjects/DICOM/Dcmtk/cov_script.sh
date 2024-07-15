@@ -35,7 +35,7 @@ for f in $(echo $folder/$testdir/*.raw); do
   time=$(stat -c %Y $f)
 
   $replayer $f DICOM $pno 1 > /dev/null 2>&1 &
-  timeout -k 0 -s SIGTERM 3s ./dcmqrscp --single-process > /dev/null 2>&1
+  timeout -k 1s -s SIGTERM 3s ./dcmqrscp --single-process > /dev/null 2>&1
 
   wait
   cov_data=$(gcovr -r $WORKDIR/dcmtk-gcov -s | grep "[lb][a-z]*:")
@@ -53,7 +53,7 @@ for f in $(echo $folder/$testdir/id*); do
   time=$(stat -c %Y $f)
 
   $replayer $f DICOM $pno 1 > /dev/null 2>&1 &
-  timeout -k 0 -s SIGTERM 3s ./dcmqrscp --single-process > /dev/null 2>&1
+  timeout -k 1s -s SIGTERM 3s ./dcmqrscp --single-process > /dev/null 2>&1
 
   wait
   count=$(expr $count + 1)

@@ -34,7 +34,7 @@ for f in $(echo $folder/$testdir/*.raw); do
   time=$(stat -c %Y $f)
     
   $replayer $f DTLS12 $pno 30 > /dev/null 2>&1 &
-  timeout -k 0 -s SIGUSR1 3s ./tinydtls-gcov/tests/dtls-server > /dev/null 2>&1
+  timeout -k 1s -s SIGUSR1 3s ./tinydtls-gcov/tests/dtls-server > /dev/null 2>&1
   
   wait
   cov_data=$(gcovr -r $WORKDIR/tinydtls-gcov -s | grep "[lb][a-z]*:")
@@ -52,7 +52,7 @@ for f in $(echo $folder/$testdir/id*); do
   time=$(stat -c %Y $f)
   
   $replayer $f DTLS12 $pno 30 > /dev/null 2>&1 &
-  timeout -k 0 -s SIGUSR1 3s ./tinydtls-gcov/tests/dtls-server > /dev/null 2>&1
+  timeout -k 1s -s SIGUSR1 3s ./tinydtls-gcov/tests/dtls-server > /dev/null 2>&1
 
   wait
   count=$(expr $count + 1)

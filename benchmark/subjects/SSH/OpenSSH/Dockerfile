@@ -21,6 +21,11 @@ RUN apt-get -y update && \
     gdb \
     netcat \
     strace \
+    libcap-dev \
+    libpcre2-dev \
+    libpcre2-8-0 \
+    libcurl4-openssl-dev \
+    libjson-c-dev \
     wget
 
 # Add a new user ubuntu, pass: ubuntu
@@ -39,13 +44,23 @@ WORKDIR /home/ubuntu
 ARG MAKE_OPT
 
 # Set up fuzzers
-RUN git clone https://github.com/profuzzbench/aflnet.git && \
-    cd aflnet && \
+COPY --chown=ubuntu:ubuntu aflnet aflnet
+RUN cd aflnet && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
-RUN git clone https://github.com/profuzzbench/aflnwe.git && \
-    cd aflnwe && \
+COPY --chown=ubuntu:ubuntu chatafl chatafl
+RUN cd chatafl && \
+    make clean all $MAKE_OPT && \
+    cd llvm_mode && make $MAKE_OPT
+
+COPY --chown=ubuntu:ubuntu chatafl-cl1 chatafl-cl1
+RUN cd chatafl-cl1 && \
+    make clean all $MAKE_OPT && \
+    cd llvm_mode && make $MAKE_OPT
+
+COPY --chown=ubuntu:ubuntu chatafl-cl2 chatafl-cl2
+RUN cd chatafl-cl2 && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
@@ -69,7 +84,7 @@ COPY --chown=ubuntu:ubuntu rand.patch ${WORKDIR}/rand.patch
 COPY --chown=ubuntu:ubuntu rand.inc ${WORKDIR}/rand.inc
 
 # Set up environment variables for ASAN
-env ASAN_OPTIONS='abort_on_error=1:symbolize=0:detect_leaks=0:detect_stack_use_after_return=1:detect_container_overflow=0:poison_array_cookie=0:malloc_fill_byte=0:max_malloc_fill_size=16777216'
+ENV ASAN_OPTIONS='abort_on_error=1:symbolize=0:detect_leaks=0:detect_stack_use_after_return=1:detect_container_overflow=0:poison_array_cookie=0:malloc_fill_byte=0:max_malloc_fill_size=16777216'
 
 
 # Download and compile OpenSSL 1.0.2

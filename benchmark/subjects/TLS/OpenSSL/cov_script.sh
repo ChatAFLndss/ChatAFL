@@ -34,7 +34,7 @@ for f in $(echo $folder/$testdir/*.raw); do
   time=$(stat -c %Y $f)
     
   $replayer $f TLS $pno 100 > /dev/null 2>&1 &
-  timeout -k 0 3s ./apps/openssl s_server -key key.pem -cert cert.pem -4 -naccept 1 -no_anti_replay > /dev/null 2>&1
+  timeout -k 1s 3s ./apps/openssl s_server -key key.pem -cert cert.pem -4 -naccept 1 -no_anti_replay > /dev/null 2>&1
   
   wait
   cov_data=$(gcovr -r . -s | grep "[lb][a-z]*:")
@@ -52,7 +52,7 @@ for f in $(echo $folder/$testdir/id*); do
   time=$(stat -c %Y $f)
   
   $replayer $f TLS $pno 100 > /dev/null 2>&1 &
-  timeout -k 0 3s ./apps/openssl s_server -key key.pem -cert cert.pem -4 -naccept 1 -no_anti_replay > /dev/null 2>&1
+  timeout -k 1s 3s ./apps/openssl s_server -key key.pem -cert cert.pem -4 -naccept 1 -no_anti_replay > /dev/null 2>&1
 
   wait
   count=$(expr $count + 1)

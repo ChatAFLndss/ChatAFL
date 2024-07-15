@@ -34,7 +34,7 @@ for f in $(echo $folder/$testdir/*.raw); do
   time=$(stat -c %Y $f)
     
   $replayer $f SSH $pno 10 > /dev/null 2>&1 &
-  timeout -k 0 3s ./sshd -d -e -p $pno -r -f sshd_config > /dev/null 2>&1
+  timeout -k 1s 3s ./sshd -d -e -p $pno -r -f sshd_config > /dev/null 2>&1
   
   wait
   cov_data=$(gcovr -r . -s | grep "[lb][a-z]*:")
@@ -52,7 +52,7 @@ for f in $(echo $folder/$testdir/id*); do
   time=$(stat -c %Y $f)
   
   $replayer $f SSH $pno 10 > /dev/null 2>&1 &
-  timeout -k 0 3s ./sshd -d -e -p $pno -r -f sshd_config > /dev/null 2>&1
+  timeout -k 1s 3s ./sshd -d -e -p $pno -r -f sshd_config > /dev/null 2>&1
 
   wait
   count=$(expr $count + 1)
