@@ -18,7 +18,7 @@ cids=()
 
 #create one container for each run
 for i in $(seq 1 $RUNS); do
-  id=$(docker run --cpus=1 -d -it $DOCIMAGE /bin/bash -c "cd ${WORKDIR} && chmod 775 run && run ${FUZZER} ${OUTDIR} '${OPTIONS}' ${TIMEOUT} ${SKIPCOUNT}")
+  id=$(docker run --cpus=1 -d -it $DOCIMAGE /bin/bash -c "cd ${WORKDIR} && chmod 775 cov_script && chmod 775 run && run ${FUZZER} ${OUTDIR} '${OPTIONS}' ${TIMEOUT} ${SKIPCOUNT}")
   cids+=(${id::12}) #store only the first 12 characters of a container ID
 done
 
