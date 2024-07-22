@@ -7,17 +7,17 @@
 #include <json-c/json.h>
 
 /*
-There are 2048 tokens available, around 270 are used for the initial data for the stall prompt
-We give at most 400 for the examples and 1300 for the stall prompt
-Similarly 1700 is for the example request in the seed enrichment
+There are 16384 tokens available, around 270 are used for the initial data for the stall prompt
+We give at most 4000 for the examples and 7200 for the stall prompt
+Similarly 8000 is for the example request in the seed enrichment
 */
 
 #define OPENAI_TOKEN "1"
 
-#define MAX_PROMPT_LENGTH 2048
-#define EXAMPLES_PROMPT_LENGTH 400
-#define HISTORY_PROMPT_LENGTH 1300
-#define EXAMPLE_SEQUENCE_PROMPT_LENGTH 1700
+#define MAX_PROMPT_LENGTH 16384
+#define EXAMPLES_PROMPT_LENGTH 4000
+#define HISTORY_PROMPT_LENGTH 7200
+#define EXAMPLE_SEQUENCE_PROMPT_LENGTH 8000
 
 #define TEMPLATE_CONSISTENCY_COUNT 5
 

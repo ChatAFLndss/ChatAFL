@@ -1,6 +1,6 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10115151.svg)](https://doi.org/10.5281/zenodo.10115151)
 
-# ChatAFL Artifact
+# ChatAFL Artifact - EXPERIMENTAL LONG WINDOW BRANCH
 
 <img align="right" src="https://github.com/ChatAFLndss/ChatAFL/assets/7456946/266f7d4f-c0af-4846-9e13-064e79c812b0">
 
