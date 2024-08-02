@@ -448,14 +448,15 @@ void setup_llm_grammars()
     if (templates_answer == NULL)
       goto free_templates_answer;
 
-    // printf("## Answer from LLM:\n %s\n", templates_answer);
+    printf("## Prompt for LLM:\n %s\n", templates_prompt);
+    printf("## Answer from LLM:\n %s\n", templates_answer);
     char *remaining_prompt = construct_prompt_for_remaining_templates(protocol_name, first_question, templates_answer);
-    // printf("remaining prompt is:\n %s\n", remaining_prompt);
+    printf("remaining prompt is:\n %s\n", remaining_prompt);
     char *remaining_templates = chat_with_llm(remaining_prompt, "turbo", GRAMMAR_RETRIES, 0.5);
     if (remaining_templates == NULL)
       goto free_remaining;
 
-    // printf("## Remaining templates:\n %s\n", remaining_templates);
+    printf("## Remaining templates:\n %s\n", remaining_templates);
 
     char *combined_templates = NULL;
     asprintf(&combined_templates, "%s\n%s", templates_answer, remaining_templates);
