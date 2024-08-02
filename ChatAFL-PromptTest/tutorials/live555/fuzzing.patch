@@ -1,0 +1,140 @@
+diff --git a/config.linux b/config.linux
+index b4021ef..4bf3772 100755
+--- a/config.linux
++++ b/config.linux
+@@ -1,12 +1,12 @@
+ COMPILE_OPTS =		$(INCLUDES) -I/usr/local/include -I. -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
+ C =			c
+-C_COMPILER =		cc
++C_COMPILER =		afl-clang-fast
+ C_FLAGS =		$(COMPILE_OPTS) $(CPPFLAGS) $(CFLAGS)
+ CPP =			cpp
+-CPLUSPLUS_COMPILER =	c++
++CPLUSPLUS_COMPILER =	afl-clang-fast++
+ CPLUSPLUS_FLAGS =	$(COMPILE_OPTS) -Wall -DBSD=1 $(CPPFLAGS) $(CXXFLAGS)
+ OBJ =			o
+-LINK =			c++ -o
++LINK =			afl-clang-fast++ -o
+ LINK_OPTS =		-L. $(LDFLAGS)
+ CONSOLE_LINK_OPTS =	$(LINK_OPTS)
+ LIBRARY_LINK =		ar cr 
+diff --git a/liveMedia/GenericMediaServer.cpp b/liveMedia/GenericMediaServer.cpp
+index 332ac2b..ce209e6 100755
+--- a/liveMedia/GenericMediaServer.cpp
++++ b/liveMedia/GenericMediaServer.cpp
+@@ -399,7 +399,7 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
+   // because that has a special use by some servers.  Similarly, we avoid choosing the same
+   // session id twice in a row.)
+   do {
+-    sessionId = (u_int32_t)our_random32();
++    sessionId = (u_int32_t)8888;
+     snprintf(sessionIdStr, sizeof sessionIdStr, "%08X", sessionId);
+   } while (sessionId == 0 || sessionId == fPreviousClientSessionId
+ 	   || lookupClientSession(sessionIdStr) != NULL);
+diff --git a/liveMedia/RTSPServer.cpp b/liveMedia/RTSPServer.cpp
+index f008933..1879a86 100755
+--- a/liveMedia/RTSPServer.cpp
++++ b/liveMedia/RTSPServer.cpp
+@@ -1600,7 +1600,7 @@ void RTSPServer::RTSPClientSession
+       switch (streamingMode) {
+           case RTP_UDP: {
+ 	    snprintf((char*)fOurClientConnection->fResponseBuffer, sizeof fOurClientConnection->fResponseBuffer,
+-		     "RTSP/1.0 200 OK\r\n"
++		     "RTSP/1.0 201 OK\r\n"
+ 		     "CSeq: %s\r\n"
+ 		     "%s"
+ 		     "Transport: RTP/%s;multicast;destination=%s;source=%s;port=%d-%d;ttl=%d\r\n"
+@@ -1619,7 +1619,7 @@ void RTSPServer::RTSPClientSession
+ 	  }
+           case RAW_UDP: {
+ 	    snprintf((char*)fOurClientConnection->fResponseBuffer, sizeof fOurClientConnection->fResponseBuffer,
+-		     "RTSP/1.0 200 OK\r\n"
++		     "RTSP/1.0 201 OK\r\n"
+ 		     "CSeq: %s\r\n"
+ 		     "%s"
+ 		     "Transport: %s;multicast;destination=%s;source=%s;port=%d;ttl=%d\r\n"
+@@ -1635,7 +1635,7 @@ void RTSPServer::RTSPClientSession
+       switch (streamingMode) {
+           case RTP_UDP: {
+ 	    snprintf((char*)fOurClientConnection->fResponseBuffer, sizeof fOurClientConnection->fResponseBuffer,
+-		     "RTSP/1.0 200 OK\r\n"
++		     "RTSP/1.0 201 OK\r\n"
+ 		     "CSeq: %s\r\n"
+ 		     "%s"
+ 		     "Transport: RTP/%s;unicast;destination=%s;source=%s;client_port=%d-%d;server_port=%d-%d\r\n"
+@@ -1652,7 +1652,7 @@ void RTSPServer::RTSPClientSession
+ 	      fOurClientConnection->handleCmd_unsupportedTransport();
+ 	    } else {
+ 	      snprintf((char*)fOurClientConnection->fResponseBuffer, sizeof fOurClientConnection->fResponseBuffer,
+-		       "RTSP/1.0 200 OK\r\n"
++		       "RTSP/1.0 201 OK\r\n"
+ 		       "CSeq: %s\r\n"
+ 		       "%s"
+ 		       "Transport: RTP/AVP/TCP;unicast;destination=%s;source=%s;interleaved=%d-%d\r\n"
+@@ -1666,7 +1666,7 @@ void RTSPServer::RTSPClientSession
+ 	  }
+           case RAW_UDP: {
+ 	    snprintf((char*)fOurClientConnection->fResponseBuffer, sizeof fOurClientConnection->fResponseBuffer,
+-		     "RTSP/1.0 200 OK\r\n"
++		     "RTSP/1.0 201 OK\r\n"
+ 		     "CSeq: %s\r\n"
+ 		     "%s"
+ 		     "Transport: %s;unicast;destination=%s;source=%s;client_port=%d;server_port=%d\r\n"
+@@ -1759,7 +1759,7 @@ void RTSPServer::RTSPClientSession
+     }
+   }
+   
+-  setRTSPResponse(ourClientConnection, "200 OK");
++  setRTSPResponse(ourClientConnection, "206 OK");
+   
+   // Optimization: If all subsessions have now been torn down, then we know that we can reclaim our object now.
+   // (Without this optimization, however, this object would still get reclaimed later, as a result of a 'liveness' timeout.)
+@@ -1974,7 +1974,7 @@ void RTSPServer::RTSPClientSession
+   
+   // Fill in the response:
+   snprintf((char*)ourClientConnection->fResponseBuffer, sizeof ourClientConnection->fResponseBuffer,
+-	   "RTSP/1.0 200 OK\r\n"
++	   "RTSP/1.0 202 OK\r\n"
+ 	   "CSeq: %s\r\n"
+ 	   "%s"
+ 	   "%s"
+@@ -2003,7 +2003,7 @@ void RTSPServer::RTSPClientSession
+     }
+   }
+   
+-  setRTSPResponse(ourClientConnection, "200 OK", fOurSessionId);
++  setRTSPResponse(ourClientConnection, "203 OK", fOurSessionId);
+ }
+ 
+ void RTSPServer::RTSPClientSession
+@@ -2012,7 +2012,7 @@ void RTSPServer::RTSPClientSession
+   // By default, we implement "GET_PARAMETER" just as a 'keep alive', and send back a dummy response.
+   // (If you want to handle "GET_PARAMETER" properly, you can do so by defining a subclass of "RTSPServer"
+   // and "RTSPServer::RTSPClientSession", and then reimplement this virtual function in your subclass.)
+-  setRTSPResponse(ourClientConnection, "200 OK", fOurSessionId, LIVEMEDIA_LIBRARY_VERSION_STRING);
++  setRTSPResponse(ourClientConnection, "204 OK", fOurSessionId, LIVEMEDIA_LIBRARY_VERSION_STRING);
+ }
+ 
+ void RTSPServer::RTSPClientSession
+@@ -2021,7 +2021,7 @@ void RTSPServer::RTSPClientSession
+   // By default, we implement "SET_PARAMETER" just as a 'keep alive', and send back an empty response.
+   // (If you want to handle "SET_PARAMETER" properly, you can do so by defining a subclass of "RTSPServer"
+   // and "RTSPServer::RTSPClientSession", and then reimplement this virtual function in your subclass.)
+-  setRTSPResponse(ourClientConnection, "200 OK", fOurSessionId);
++  setRTSPResponse(ourClientConnection, "205 OK", fOurSessionId);
+ }
+ 
+ GenericMediaServer::ClientConnection*
+diff --git a/testProgs/testOnDemandRTSPServer.cpp b/testProgs/testOnDemandRTSPServer.cpp
+index 3696a77..18254f9 100755
+--- a/testProgs/testOnDemandRTSPServer.cpp
++++ b/testProgs/testOnDemandRTSPServer.cpp
+@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
+   RTSPServer* rtspServer = RTSPServer::createNew(*env, 322, authDB);
+ #else
+   // Serve regular RTSP (over a TCP connection):
+-  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554, authDB);
++  RTSPServer* rtspServer = RTSPServer::createNew(*env, atoi(argv[1]), authDB);
+ #endif
+   if (rtspServer == NULL) {
+     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
