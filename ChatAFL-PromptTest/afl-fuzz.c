@@ -2646,7 +2646,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     strcpy(nl_file_path, in_dir);
     strcat(nl_file_path, "/");
     strcat(nl_file_path, nl_file_name);
-    // printf("## File path: %s\n", nl_file_path);
+    printf("## File path: %s\n", nl_file_path);
 
     FILE *nl_file = fopen(nl_file_path, "r");
     if (nl_file == NULL)
@@ -2662,7 +2662,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     char *nl_file_content = malloc(fsize + 1);
     fread(nl_file_content, fsize, 1, nl_file);
     nl_file_content[fsize] = '\0';
-    // printf("## File content:\n %s\n", nl_file_content);
+    printf("## File content:\n %s\n", nl_file_content);
     fclose(nl_file);
     free(nl_file_path);
 
@@ -2731,8 +2731,8 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
         char *formatted_nl_file_content = format_string(nl_file_content);
         char *unescaped_client_requests = unescape_string(client_request_answer);
         char *formatted_unescaped_client_requests = format_string(unescaped_client_requests);
-        // printf("## Formatted answer from LLM:\n %s\n", formatted_unescaped_client_requests);
-        // printf("## Formatted file content:\n %s\n", formatted_nl_file_content);
+        printf("## Formatted answer from LLM:\n %s\n", formatted_unescaped_client_requests);
+        printf("## Formatted file content:\n %s\n", formatted_nl_file_content);
         if (formatted_unescaped_client_requests == NULL || strcmp(formatted_unescaped_client_requests, formatted_nl_file_content) == 0)
         {
           printf("## Skip the same seed\n");
@@ -2751,7 +2751,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
         strcat(enriched_file_path, "/");
         strcat(enriched_file_path, enriched_file_name);
         
-        // printf("## Enriched file path: %s\n", enriched_file_path);
+        printf("## Enriched file path: %s\n", enriched_file_path);
 
         write_new_seeds(enriched_file_path, unescaped_client_requests);
 
@@ -10201,6 +10201,7 @@ int main(int argc, char **argv)
   // AFLNet - Check for required arguments
   protocol_selected = 1;
   protocol_name = ck_strdup(argv[1]);
+  in_dir = argv[3];
 
       if (!strcmp(argv[1], "RTSP"))
       {
@@ -10379,12 +10380,13 @@ int main(int argc, char **argv)
     message_types_set = kh_init(strSet);
 
     setup_llm_grammars();
-  //  enrich_testcases();
+    enrich_testcases();
   }
 
   printf("protocol_name: %s\n", protocol_name);
 
   OKF("We're done here. Have a nice day!\n");
+  free(protocol_name)
 
   exit(0);
 }
