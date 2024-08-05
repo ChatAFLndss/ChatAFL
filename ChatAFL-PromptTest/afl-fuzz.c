@@ -10386,7 +10386,7 @@ int main(int argc, char **argv)
   printf("protocol_name: %s\n", protocol_name);
 
   OKF("We're done here. Have a nice day!\n");
-  free(protocol_name)
+  free(protocol_name);
 
   exit(0);
 }
