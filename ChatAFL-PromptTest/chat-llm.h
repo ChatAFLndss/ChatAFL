@@ -19,10 +19,10 @@ Similarly 1700 is for the example request in the seed enrichment
 #define HISTORY_PROMPT_LENGTH 1300
 #define EXAMPLE_SEQUENCE_PROMPT_LENGTH 1700
 
-#define TEMPLATE_CONSISTENCY_COUNT 5
+#define TEMPLATE_CONSISTENCY_COUNT 1
 
 // Maximum amount of retries for the state stall
-#define STALL_RETRIES 2
+#define STALL_RETRIES 1
 
 // Maximum amount of tries to get the grammars
 #define GRAMMAR_RETRIES 1
@@ -34,10 +34,10 @@ Similarly 1700 is for the example request in the seed enrichment
 #define ENRICHMENT_RETRIES 1
 
 // Maximum number of messages to be added
-#define MAX_ENRICHMENT_MESSAGE_TYPES 2
+#define MAX_ENRICHMENT_MESSAGE_TYPES 1
 
 // Maximum number of messages to examine for addition
-#define MAX_ENRICHMENT_CORPUS_SIZE 1
+#define MAX_ENRICHMENT_CORPUS_SIZE 7
 
 #define PCRE2_CODE_UNIT_WIDTH 8 // Characters are 8 bits
 #include <pcre2.h>
