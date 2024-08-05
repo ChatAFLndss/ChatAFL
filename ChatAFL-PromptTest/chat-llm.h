@@ -39,6 +39,9 @@ Similarly 1700 is for the example request in the seed enrichment
 // Maximum number of messages to examine for addition
 #define MAX_ENRICHMENT_CORPUS_SIZE 7
 
+// Maximum amount of tries to get the first message
+#define MAX_FIRST_MESSAGE_RETRIES 1
+
 #define PCRE2_CODE_UNIT_WIDTH 8 // Characters are 8 bits
 #include <pcre2.h>
 
@@ -79,6 +82,10 @@ char *extract_message_pattern(const char *header_str,
                                const char *debug_file_name);
 char *extract_stalled_message(char *message, size_t message_len);
 char *format_request_message(char *message);
+
+// For upgrade ChatAFL with seed input
+char *get_first_message(char *protocol_name, const char *in_dir);
+char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content);
 
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);

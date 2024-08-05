@@ -972,6 +972,78 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     return response;
 }
 
+/**
+ * For upgrade ChatAFL with seed input.
+ */
+
+char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content) {
+  char *template =  "In the %s protocol, %s protocol message sequence is as follows."
+                    "Extract first message of %s protocol message sequence.\\n"
+                    "Message Sequence:\\n%s";
+
+  char *prompt = NULL;
+  asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, file_content);
+  printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
+  char *prompt_grammars = NULL;
+
+  asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", prompt);
+
+  return prompt_grammars;
+}
+
+char *get_first_message(char *protocol_name, const char *in_dir){
+  // Read files
+  struct dirent **nl_files;
+  int nl_cnt = scandir(in_dir, &nl_files, NULL, alphasort);
+  if (nl_cnt < 0)
+  {
+    printf("Error in reading the directory %s\n", in_dir);
+    exit(1);
+  }
+
+  // traverse the directory to read the files
+  for (int i = 0; i < nl_cnt; i++)
+  {
+    char *nl_file_name = nl_files[i]->d_name;
+    // skip the . and .. files and files whose name includes "enriched"
+    if (strcmp(nl_file_name, ".") == 0 || strcmp(nl_file_name, "..") == 0 || strstr(nl_file_name, "enriched") != NULL)
+    {
+      continue;
+    }
+    char *nl_file_path = malloc(strlen(in_dir) + strlen(nl_file_name) + 2);
+    strcpy(nl_file_path, in_dir);
+    strcat(nl_file_path, "/");
+    strcat(nl_file_path, nl_file_name);
+    // printf("## File path: %s\n", nl_file_path);
+
+    FILE *nl_file = fopen(nl_file_path, "r");
+    if (nl_file == NULL)
+    {
+      printf("Error in opening the file %s\n", nl_file_path);
+      exit(1);
+    }
+
+    // read the whole file into a buffer
+    fseek(nl_file, 0, SEEK_END);
+    size_t fsize = ftell(nl_file);
+    fseek(nl_file, 0, SEEK_SET);
+    char *nl_file_content = malloc(fsize + 1);
+    fread(nl_file_content, fsize, 1, nl_file);
+    nl_file_content[fsize] = '\0';
+    // printf("## File content:\n %s\n", nl_file_content);
+    fclose(nl_file);
+    free(nl_file_path);
+
+    // Construct prompt for getting first message
+    char *prompt = construct_prompt_for_getting_first_message(protocol_name, nl_file_content);
+
+    // Use LLM for getting first message
+    char *response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
+    printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
+  }
+
+  return NULL;
+}
 // // For debugging
 // // gcc -g -o chat-llm chat-llm.c chat-llm.h -lcurl -ljson-c -lpcre2-8
 // int main(int argc, char **argv)
