@@ -975,34 +975,38 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
  * For upgrade ChatAFL with seed input.
  */
 
-char *parse_response_with_bracket(char *answers) {
+char *extract_text_between_brackets(char *response) {
   char *message = NULL;
 
-  char *ptr = answers;
-  int len = strlen(answers);
-
-  while (ptr < answers + len)
-  {
-      char *start = strchr(ptr, '[');
-      if (start == NULL)
-          break;
-      char *end = strchr(start, ']');
-      if (end == NULL)
-          break;
-      int count = end - start + 1;
-      char *temp = (char *)ck_alloc(count + 1);
-      strncpy(temp, start, count);
-      temp[count] = '\0';
-      ptr = end + 1;
-
-      // conver temp to json object and save it to the list
-      json_object *jobj = json_tokener_parse(temp);
-      const char *parsed_message = json_object_to_json_string(jobj);
-      asprintf(&message, parsed_message);
-
-      // printf("%s\n", message);
+  // Find [
+  const char* start = strchr(response, '[');
+  if (start == NULL) {
+      return NULL;
+  }
+  // Find ]
+  const char* end = strchr(start, ']');
+  if (end == NULL) {
+      return NULL;
+  }
+  int length = end - start - 1;
+  if (length <= 0) {
+      return NULL;
+  }
+  char* result = (char*)malloc(length + 1);
+  if (result == NULL) {
+      return NULL;
   }
 
+  // Copy text between brackets
+  strncpy(result, start + 1, length);
+  result[length] = '\0';
+
+  json_object *obj = json_object_new_string(result);
+  const char *parsed_message = json_object_to_json_string(obj);
+  asprintf(&message, parsed_message);
+
+  free(result);
+  // printf("%s\n", message);
   return message;
 }
 
@@ -1081,7 +1085,7 @@ char *get_first_message(char *protocol_name, const char *in_dir){
     response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
     // printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
     
-    first_message = parse_response_with_bracket(response);
+    first_message = extract_text_between_brackets(response);
 
     goto RETURN_FIRST_MESSAGE;
   }
