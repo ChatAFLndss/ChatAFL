@@ -435,6 +435,7 @@ void setup_llm_grammars()
 {
 
   ACTF("Getting grammars from LLM...");
+  get_first_message(protocol_name, in_dir);
 
   khash_t(consistency_table) *const_table = kh_init(consistency_table);
   char *first_question;
