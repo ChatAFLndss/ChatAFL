@@ -1030,6 +1030,10 @@ char *construct_prompt_for_getting_first_message(char *protocol_name, const char
 char *get_first_message(char *protocol_name, const char *in_dir){
   // Read files
   struct dirent **nl_files;
+  char *prompt = NULL;
+  char *response = NULL;
+  char *first_message = NULL;
+
   int nl_cnt = scandir(in_dir, &nl_files, NULL, alphasort);
   if (nl_cnt < 0)
   {
@@ -1038,40 +1042,51 @@ char *get_first_message(char *protocol_name, const char *in_dir){
   }
 
   // traverse the directory to read the files
-  char *nl_file_name = nl_files[0]->d_name;
-  char *nl_file_path = malloc(strlen(in_dir) + strlen(nl_file_name) + 2);
-  strcpy(nl_file_path, in_dir);
-  strcat(nl_file_path, "/");
-  strcat(nl_file_path, nl_file_name);
-  // printf("## File path: %s\n", nl_file_path);
-
-  FILE *nl_file = fopen(nl_file_path, "r");
-  if (nl_file == NULL)
+  for (int i = 0; i < nl_cnt; i++)
   {
-    printf("Error in opening the file %s\n", nl_file_path);
-    exit(1);
+    char *nl_file_name = nl_files[i]->d_name;
+    // skip the . and .. files and files whose name includes "enriched"
+    if (strcmp(nl_file_name, ".") == 0 || strcmp(nl_file_name, "..") == 0 || strstr(nl_file_name, "enriched") != NULL)
+    {
+      continue;
+    }
+    char *nl_file_path = malloc(strlen(in_dir) + strlen(nl_file_name) + 2);
+    strcpy(nl_file_path, in_dir);
+    strcat(nl_file_path, "/");
+    strcat(nl_file_path, nl_file_name);
+    // printf("## File path: %s\n", nl_file_path);
+
+    FILE *nl_file = fopen(nl_file_path, "r");
+    if (nl_file == NULL)
+    {
+      printf("Error in opening the file %s\n", nl_file_path);
+      exit(1);
+    }
+
+    // read the whole file into a buffer
+    fseek(nl_file, 0, SEEK_END);
+    size_t fsize = ftell(nl_file);
+    fseek(nl_file, 0, SEEK_SET);
+    char *nl_file_content = malloc(fsize + 1);
+    fread(nl_file_content, fsize, 1, nl_file);
+    nl_file_content[fsize] = '\0';
+    // printf("## File content:\n %s\n", nl_file_content);
+    fclose(nl_file);
+    free(nl_file_path);
+
+    // Construct prompt for getting first message
+    prompt = construct_prompt_for_getting_first_message(protocol_name, nl_file_content);
+
+    // Use LLM for getting first message
+    response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
+    // printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
+    
+    first_message = parse_response_with_bracket(response);
+
+    goto RETURN_FIRST_MESSAGE;
   }
-
-  // read the whole file into a buffer
-  fseek(nl_file, 0, SEEK_END);
-  size_t fsize = ftell(nl_file);
-  fseek(nl_file, 0, SEEK_SET);
-  char *nl_file_content = malloc(fsize + 1);
-  fread(nl_file_content, fsize, 1, nl_file);
-  nl_file_content[fsize] = '\0';
-  // printf("## File content:\n %s\n", nl_file_content);
-  fclose(nl_file);
-  free(nl_file_path);
-
-  // Construct prompt for getting first message
-  char *prompt = construct_prompt_for_getting_first_message(protocol_name, nl_file_content);
-
-  // Use LLM for getting first message
-  char *response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
-  // printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
-  char *first_message = parse_response_with_bracket(response);
-  
-  return first_message;
+  RETURN_FIRST_MESSAGE:
+    return first_message;
 }
 // // For debugging
 // // gcc -g -o chat-llm chat-llm.c chat-llm.h -lcurl -ljson-c -lpcre2-8
