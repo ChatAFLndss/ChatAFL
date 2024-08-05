@@ -987,7 +987,7 @@ char *construct_prompt_for_getting_first_message(char *protocol_name, const char
   int sequence_len = strlen(sequence_escaped_str) - 1;
 
   char *prompt = NULL;
-  asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, sequence_len, file_content);
+  asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, sequence_len, sequence_escaped_str);
   printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
   char *prompt_grammars = NULL;
 
