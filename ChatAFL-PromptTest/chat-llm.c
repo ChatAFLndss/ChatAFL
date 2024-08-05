@@ -966,7 +966,6 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     json_object_put(sequence_escaped);
 
     char *response = chat_with_llm(prompt, "instruct", ENRICHMENT_RETRIES, 0.5);
-
     free(prompt);
 
     return response;
@@ -977,12 +976,18 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
  */
 
 char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content) {
-  char *template =  "In the %s protocol, %s protocol message sequence is as follows."
+  char *template =  "In the %s protocol, %s protocol message sequence is as follows. "
                     "Extract first message of %s protocol message sequence.\\n"
-                    "Message Sequence:\\n%s";
+                    "Message Sequence:\\n%.*s\\n"
+                    "Desired Format:\\n[MESSAGE]";
+
+  json_object *sequence_escaped = json_object_new_string(file_content);
+  const char *sequence_escaped_str = json_object_to_json_string(sequence_escaped);
+  sequence_escaped_str++;
+  int sequence_len = strlen(sequence_escaped_str) - 1;
 
   char *prompt = NULL;
-  asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, file_content);
+  asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, sequence_len, file_content);
   printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
   char *prompt_grammars = NULL;
 
