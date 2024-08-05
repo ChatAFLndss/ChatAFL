@@ -25,19 +25,19 @@ Similarly 1700 is for the example request in the seed enrichment
 #define STALL_RETRIES 2
 
 // Maximum amount of tries to get the grammars
-#define GRAMMAR_RETRIES 5
+#define GRAMMAR_RETRIES 1
 
 // Maximum amount
-#define MESSAGE_TYPE_RETRIES 5
+#define MESSAGE_TYPE_RETRIES 1
 
 //Maximum amount of tries for an enrichment
-#define ENRICHMENT_RETRIES 5
+#define ENRICHMENT_RETRIES 1
 
 // Maximum number of messages to be added
 #define MAX_ENRICHMENT_MESSAGE_TYPES 2
 
 // Maximum number of messages to examine for addition
-#define MAX_ENRICHMENT_CORPUS_SIZE 10
+#define MAX_ENRICHMENT_CORPUS_SIZE 1
 
 #define PCRE2_CODE_UNIT_WIDTH 8 // Characters are 8 bits
 #include <pcre2.h>
