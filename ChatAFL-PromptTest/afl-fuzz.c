@@ -435,8 +435,9 @@ void setup_llm_grammars()
 {
 
   ACTF("Getting grammars from LLM...");
-  get_first_message(protocol_name, in_dir);
-
+  char *first_message = get_first_message(protocol_name, in_dir);
+  printf("## First Message of file:\n%s\n", first_message);
+  
   khash_t(consistency_table) *const_table = kh_init(consistency_table);
   char *first_question;
   char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question);
