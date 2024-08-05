@@ -1003,7 +1003,9 @@ char *extract_text_between_brackets(char *response) {
 
   json_object *obj = json_object_new_string(result);
   const char *parsed_message = json_object_to_json_string(obj);
-  asprintf(&message, parsed_message);
+  parsed_message++;
+  int message_len = strlen(parsed_message) - 1;
+  asprintf(&message, "%.*s", message_len, parsed_message);
 
   free(result);
   // printf("%s\n", message);
