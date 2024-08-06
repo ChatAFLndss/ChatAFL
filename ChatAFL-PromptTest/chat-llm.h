@@ -87,6 +87,7 @@ char *format_request_message(char *message);
 char *get_first_message(char *protocol_name, const char *in_dir);
 char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content);
 char *extract_text_between_brackets(char *response);
+char *convert_message_field_to_value(char *protocol_name, char *message);
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);

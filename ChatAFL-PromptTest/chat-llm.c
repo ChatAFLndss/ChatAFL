@@ -1094,6 +1094,69 @@ char *get_first_message(char *protocol_name, const char *in_dir){
   RETURN_FIRST_MESSAGE:
     return first_message;
 }
+
+char *convert_message_field_to_value(char *protocol_name, char *message) {
+	char *converted_message = NULL;
+	char *prompt = NULL;
+	char *example_HTTP =
+					"For the HTTP protocol, getting header and converting all field values to \\\"<<VALUE>>\\\" is:\\\\n"
+					"* input\\n"
+					"```\\n"
+					"GET /hello.txt HTTP/1.1 \\\\r\\\\n"
+					"Host: 127.0.0.1:8080 \\\\r\\\\n"
+					"User-Agent: curl/8.0.1 \\\\r\\\\n"
+					"Accept: */* \\\\r\\\\n"
+					"\\\\r\\\\n"
+					"```\\n"
+					"* output\\n"
+					"Header: [GET]\\n"
+					"```\\n"
+					"GET <<VALUE>> HTTP/1.1 \\\\r\\\\n"
+					"Host: <<VALUE>> \\\\r\\\\n"
+					"User-Agent: <<VALUE>> \\\\r\\\\n"
+					"Accept: <<VALUE>> \\\\r\\\\n"
+					"\\\\r\\\\n"
+					"```\\n";
+	char *example_RTSP =
+					"For the RTSP protocol, getting header and converting all field values to \\\"<<VALUE>>\\\" is:\\n"
+					"* input\\n"
+					"```\\n"
+					"DESCRIBE rtsp://127.0.0.1:8554/matroskaFileTest RTSP/1.0 \\\\r\\\\n"
+					"CSeq: 2 \\\\r\\\\n"
+					"User-Agent: ./testRTSPClient (LIVE555 Streaming Media v2018.08.28) \\\\r\\\\n"
+					"Accept: application/sdp \\\\r\\\\n"
+					"\\\\r\\\\n"
+					"```\\n"
+					"* output\\n"
+					"Header: [DESCRIBE]\\n"
+					"```\\n"
+					"DESCRIBE <<VALUE>> \\\\r\\\\n"
+					"CSeq: <<VALUE>> \\\\r\\\\n"
+					"User-Agent: <<VALUE>> \\\\r\\\\n"
+					"Accept: <<VALUE>> \\\\r\\\\n"
+					"\\\\r\\\\n"
+					"```\\n";
+
+		char *template =
+					"%s\\n"
+					"%s\\n"
+					"For the %s protocol message. Get header and convert all field values to \\\"<<VALUE>>\\\" is:\\n"
+					"* input\\n"
+					"```\\n"
+					"%s"
+					"```\\n";
+
+	asprintf(&prompt, template, example_HTTP, example_RTSP, protocol_name, message);
+
+  char *prompt_grammars = NULL;
+  asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", prompt);
+
+	char *response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
+	printf("## chat-llm.c/convert_message_field_to_value-response:\n\n %s \n\n", response);
+
+	return converted_message;
+}
+
 // // For debugging
 // // gcc -g -o chat-llm chat-llm.c chat-llm.h -lcurl -ljson-c -lpcre2-8
 // int main(int argc, char **argv)
