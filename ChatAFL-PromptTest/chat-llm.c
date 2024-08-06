@@ -211,7 +211,7 @@ char *construct_prompt_for_templates(char *protocol_name, char **final_msg, char
 		char *prompt_example_template = "For the %s protocol, the %s client request template is:\\n"
 																		"%s: [\\\"%s\\\"]";
 		char *prompt_example = NULL;
-		asprintf(&prompt_example, prompt_example_template, protocol_name, message_type, protocol_name, example_message);
+		asprintf(&prompt_example, prompt_example_template, protocol_name, message_type, message_type, example_message);
 
     char *msg = NULL;
     // asprintf(&msg, "%s\\n%s\\n%s\\nFor the %s protocol, all of client request templates are :", prompt_example, prompt_rtsp_example, prompt_http_example, protocol_name);
@@ -1308,54 +1308,68 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 }
 
 char *transform_message(const char *input) {
-	size_t new_length = strlen(input) * 3; // Allocate enough space
-	char *transformed = (char *)malloc(new_length);
-	if (!transformed) {
-			perror("Failed to allocate memory");
-			exit(EXIT_FAILURE);
-	}
-
 	const char *src = input;
-	char *dest = transformed;
+	size_t len = strlen(input);
+	
+	// 계산된 크기보다 약간 여유 있는 메모리를 할당
+	char *output = (char *)malloc(len * 6 + 50); // \r, \n, \", , 추가로 인해 크기가 증가함
+	char *dest = output;
 
-	*dest++ = '"'; // Add the first quote
-	while (*src) {
-			if (src[0] == '\r' && src[1] == '\n') {
-					// If \r\n is already present
-					strcpy(dest, "\\r\\n\", \"");
-					dest += 8;
-					src += 2;
-			} else if (*src == '\n') {
-					// Convert \n to \r\n
-					strcpy(dest, "\\r\\n\", \"");
-					dest += 8;
-					src++;
-			} else if (*src == '\\') {
-					// Handle backslash
-					strcpy(dest, "\\\\");
-					dest += 2;
-					src++;
-			} else if (*src == '"') {
-					// Handle quote
-					strcpy(dest, "\\\"");
-					dest += 2;
-					src++;
-			} else {
-					// Handle other characters
-					*dest++ = *src++;
-			}
+	if (output == NULL) {
+			fprintf(stderr, "Memory allocation failed\n");
+			exit(1);
 	}
-	strcpy(dest, "\""); // Add the last quote
+
+	*dest++ = '\\';
+	*dest++ = '\"';
+
+	while (*src) {
+			if (*src == '\n') {
+					*dest++ = '\\';
+					*dest++ = 'r';
+					*dest++ = '\\';
+					*dest++ = 'n';
+					*dest++ = '\\';
+					*dest++ = '\"';
+					*dest++ = ',';
+					*dest++ = '\\';
+					*dest++ = '\"';
+			} else if (*src == '\"') {
+					*dest++ = '\\';
+					*dest++ = '\"';
+			} else {
+					*dest++ = *src;
+			}
+			src++;
+	}
+
+	// Adding the last segment
+	*dest++ = '\\';
+	*dest++ = 'r';
+	*dest++ = '\\';
+	*dest++ = 'n';
+	*dest++ = '\\';
+	*dest++ = '\"';
+	*dest++ = ',';
+	*dest++ = '\\';
+	*dest++ = '\"';
+	*dest++ = '\\';
+	*dest++ = 'r';
+	*dest++ = '\\';
+	*dest++ = 'n';
+	*dest++ = '\\';
+	*dest++ = '\"';
+	*dest = '\0';
 
 	char *transformed_message = NULL;
 
-	json_object *obj = json_object_new_string(transformed);
+	json_object *obj = json_object_new_string(output);
   const char *parsed_message = json_object_to_json_string(obj);
   parsed_message++;
   int message_len = strlen(parsed_message) - 1;
   asprintf(&transformed_message, "%.*s", message_len, parsed_message);
 
-  free(transformed);
+  free(output);
 
 	return transformed_message;
 }
