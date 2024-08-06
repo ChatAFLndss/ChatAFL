@@ -198,6 +198,7 @@ char *construct_prompt_for_templates(char *protocol_name, char **final_msg, char
 {
     // Give one example for learning formats
     char *prompt_rtsp_example = "For the RTSP protocol, the DESCRIBE client request template is:\\n"
+																"*Output:\\n"
                                 "DESCRIBE: [\\\"DESCRIBE <<VALUE>>\\\\r\\\\n\\\","
                                 "\\\"CSeq: <<VALUE>>\\\\r\\\\n\\\","
                                 "\\\"User-Agent: <<VALUE>>\\\\r\\\\n\\\","
@@ -205,11 +206,14 @@ char *construct_prompt_for_templates(char *protocol_name, char **final_msg, char
                                 "\\\"\\\\r\\\\n\\\"]";
 
     char *prompt_http_example = "For the HTTP protocol, the GET client request template is:\\n"
+																"*Output:\\n"
                                 "GET: [\\\"GET <<VALUE>>\\\\r\\\\n\\\"]";
 
 		// Additional Part
 		char *prompt_example_template = "For the %s protocol, the %s client request template is:\\n"
-																		"%s: [\\\"%s\\\"]";
+																		"*Output:\\n"
+																		"%s: [%s]";
+
 		char *prompt_example = NULL;
 		asprintf(&prompt_example, prompt_example_template, protocol_name, message_type, message_type, example_message);
 
@@ -1319,50 +1323,22 @@ char *transform_message(const char *input) {
 			exit(1);
 	}
 
-	*dest++ = '\\';
 	*dest++ = '\"';
 
 	while (*src) {
 		if (*src == '\\' && *(src + 1) == 'n') {
-			*dest++ = '\\';
-			*dest++ = '\\';
-			*dest++ = 'r';
-			*dest++ = '\\';
-			*dest++ = '\\';
-			*dest++ = 'n';
-			*dest++ = '\\';
+			*dest++ = '\r';
+			*dest++ = '\n';
 			*dest++ = '\"';
 			*dest++ = ',';
-			*dest++ = '\\';
 			*dest++ = '\"';
-		} else if (*src == '\"') {
-			*dest++ = '\\';
-			*dest++ = '\"';
+			*src++;
 		} else {
 			*dest++ = *src;
 		}
 		src++;
 	}
 
-	// Adding the last segment
-	*dest++ = '\\';
-	*dest++ = '\\';
-	*dest++ = 'r';
-	*dest++ = '\\';
-	*dest++ = '\\';
-	*dest++ = 'n';
-	*dest++ = '\\';
-	*dest++ = '\"';
-	*dest++ = ',';
-	*dest++ = '\\';
-	*dest++ = '\"';
-	*dest++ = '\\';
-	*dest++ = '\\';
-	*dest++ = 'r';
-	*dest++ = '\\';
-	*dest++ = '\\';
-	*dest++ = 'n';
-	*dest++ = '\\';
 	*dest++ = '\"';
 	*dest = '\0';
 
