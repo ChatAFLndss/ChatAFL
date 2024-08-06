@@ -1012,11 +1012,48 @@ char *extract_text_between_brackets(char *response) {
   return message;
 }
 
+char *extract_text_between_backtics(char *response) {
+  char *message = NULL;
+
+  // Find start ```
+  const char* start = strstr(response, "```");
+  if (start == NULL) {
+      return NULL;
+  }
+  // Find end ```
+  const char* end = strstr(start, "```");
+  if (end == NULL) {
+      return NULL;
+  }
+  int length = end - start + 3;
+  if (length <= 0) {
+      return NULL;
+  }
+  char* result = (char*)malloc(length + 1);
+  if (result == NULL) {
+      return NULL;
+  }
+
+  // Copy text between brackets
+  strncpy(result, start + 3, length);
+  result[length] = '\0';
+
+  json_object *obj = json_object_new_string(result);
+  const char *parsed_message = json_object_to_json_string(obj);
+  parsed_message++;
+  int message_len = strlen(parsed_message) - 1;
+  asprintf(&message, "%.*s", message_len, parsed_message);
+
+  free(result);
+  // printf("%s\n", message);
+  return message;
+}
+
 char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content) {
   char *template =  "In the %s protocol, %s protocol message sequence is as follows. "
                     "Extract first message of %s protocol message sequence.\\n"
-                    "Message Sequence:\\n%.*s\\n"
-                    "Desired Format:\\n[MESSAGE]";
+                    "Desired Format:\\n[    ]\\n"
+                    "Message Sequence:\\n%.*s\\n";
 
   json_object *sequence_escaped = json_object_new_string(file_content);
   const char *sequence_escaped_str = json_object_to_json_string(sequence_escaped);
@@ -1025,7 +1062,7 @@ char *construct_prompt_for_getting_first_message(char *protocol_name, const char
 
   char *prompt = NULL;
   asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, sequence_len, sequence_escaped_str);
-  printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
+  // printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
   char *prompt_grammars = NULL;
 
   asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", prompt);
@@ -1099,7 +1136,7 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 	char *converted_message = NULL;
 	char *prompt = NULL;
 	char *example_HTTP =
-					"For the HTTP protocol, getting header and converting all field values to \\\"<<VALUE>>\\\" is:\\\\n"
+					"For the HTTP protocol, Converting all field values to \\\"<<VALUE>>\\\" is:\\\\n"
 					"* input\\n"
 					"```\\n"
 					"GET /hello.txt HTTP/1.1 \\\\r\\\\n"
@@ -1109,7 +1146,6 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 					"\\\\r\\\\n"
 					"```\\n"
 					"* output\\n"
-					"Header: [GET]\\n"
 					"```\\n"
 					"GET <<VALUE>> HTTP/1.1 \\\\r\\\\n"
 					"Host: <<VALUE>> \\\\r\\\\n"
@@ -1118,7 +1154,7 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 					"\\\\r\\\\n"
 					"```\\n";
 	char *example_RTSP =
-					"For the RTSP protocol, getting header and converting all field values to \\\"<<VALUE>>\\\" is:\\n"
+					"For the RTSP protocol, Converting all field values to \\\"<<VALUE>>\\\" is:\\n"
 					"* input\\n"
 					"```\\n"
 					"DESCRIBE rtsp://127.0.0.1:8554/matroskaFileTest RTSP/1.0 \\\\r\\\\n"
@@ -1128,7 +1164,6 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 					"\\\\r\\\\n"
 					"```\\n"
 					"* output\\n"
-					"Header: [DESCRIBE]\\n"
 					"```\\n"
 					"DESCRIBE <<VALUE>> \\\\r\\\\n"
 					"CSeq: <<VALUE>> \\\\r\\\\n"
@@ -1140,7 +1175,7 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 		char *template =
 					"%s\\n"
 					"%s\\n"
-					"For the %s protocol message. Get header and convert all field values to \\\"<<VALUE>>\\\" is:\\n"
+					"For the %s protocol message. Convert all field values to \\\"<<VALUE>>\\\" is:\\n"
 					"* input\\n"
 					"```\\n"
 					"%s"
@@ -1151,8 +1186,10 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
   char *prompt_grammars = NULL;
   asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", prompt);
 
-	char *response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
-	printf("## chat-llm.c/convert_message_field_to_value-response:\n\n %s \n\n", response);
+	char *response = chat_with_llm(prompt_grammars, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
+	// printf("## chat-llm.c/convert_message_field_to_value-response:\n\n%s \n\n", response);
+
+	asprintf(&converted_message, extract_text_between_backtics(response));
 
 	return converted_message;
 }
