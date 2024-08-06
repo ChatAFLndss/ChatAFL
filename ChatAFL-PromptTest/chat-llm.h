@@ -68,7 +68,8 @@ KHASH_MAP_INIT_STR(field_table, int);
 KHASH_INIT(consistency_table, const char *, khash_t(field_table) *, 1, kh_str_hash_func, kh_str_hash_equal);
 
 char *chat_with_llm(char *prompt, char *model, int tries, float temperature);
-char *construct_prompt_for_templates(char *protocol_name, char **final_msg);
+// char *construct_prompt_for_templates(char *protocol_name, char **final_msg);
+char *construct_prompt_for_templates(char *protocol_name, char **final_msg, char *message_type, char *example_message);
 char *construct_prompt_for_remaining_templates(char *protocol_name, char *templates_prompt, char *templates_answer);
 char *construct_prompt_for_protocol_message_types(char *protocol_name);
 char *construct_prompt_for_requests_to_states(const char *protocol_name, const char *protocol_state, const char *example_requests);

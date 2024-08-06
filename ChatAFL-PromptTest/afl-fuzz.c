@@ -452,7 +452,7 @@ void setup_llm_grammars()
 
   khash_t(consistency_table) *const_table = kh_init(consistency_table);
   char *first_question;
-  char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question);
+  char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question, message_type, first_message_value);
 
   for (int iter = 0; iter < TEMPLATE_CONSISTENCY_COUNT; iter++)
   {
@@ -462,10 +462,10 @@ void setup_llm_grammars()
     if (templates_answer == NULL)
       goto free_templates_answer;
 
-    // printf("## Prompt for LLM:\n %s\n", templates_prompt);
-    // printf("## Answer from LLM:\n %s\n", templates_answer);
+    printf("## Prompt for LLM:\n%s\n\n", templates_prompt);
+    printf("## Answer from LLM:\n%s\n\n", templates_answer);
     char *remaining_prompt = construct_prompt_for_remaining_templates(protocol_name, first_question, templates_answer);
-    // printf("remaining prompt is:\n %s\n", remaining_prompt);
+    printf("remaining prompt is:\n%s\n\n", remaining_prompt);
     char *remaining_templates = chat_with_llm(remaining_prompt, "turbo", GRAMMAR_RETRIES, 0.5);
     if (remaining_templates == NULL)
       goto free_remaining;

@@ -165,7 +165,36 @@ char *construct_prompt_stall(char *protocol_name, char *examples, char *history)
     return final_prompt;
 }
 
-char *construct_prompt_for_templates(char *protocol_name, char **final_msg)
+// char *construct_prompt_for_templates(char *protocol_name, char **final_msg)
+// {
+//     // Give one example for learning formats
+//     char *prompt_rtsp_example = "For the RTSP protocol, the DESCRIBE client request template is:\\n"
+//                                 "DESCRIBE: [\\\"DESCRIBE <<VALUE>>\\\\r\\\\n\\\","
+//                                 "\\\"CSeq: <<VALUE>>\\\\r\\\\n\\\","
+//                                 "\\\"User-Agent: <<VALUE>>\\\\r\\\\n\\\","
+//                                 "\\\"Accept: <<VALUE>>\\\\r\\\\n\\\","
+//                                 "\\\"\\\\r\\\\n\\\"]";
+
+//     char *prompt_http_example = "For the HTTP protocol, the GET client request template is:\\n"
+//                                 "GET: [\\\"GET <<VALUE>>\\\\r\\\\n\\\"]";
+
+//     char *msg = NULL;
+//     asprintf(&msg, "%s\\n%s\\nFor the %s protocol, all of client request templates are :", prompt_rtsp_example, prompt_http_example, protocol_name);
+//     *final_msg = msg;
+//     /** Format of prompt_grammars
+//     prompt_grammars = [
+//         {"role": "system", "content": "You are a helpful assistant."},
+//         {"role": "user", "content": msg}
+//     ]
+//      **/
+//     char *prompt_grammars = NULL;
+
+//     asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", msg);
+
+//     return prompt_grammars;
+// }
+
+char *construct_prompt_for_templates(char *protocol_name, char **final_msg, char *message_type, char *example_message)
 {
     // Give one example for learning formats
     char *prompt_rtsp_example = "For the RTSP protocol, the DESCRIBE client request template is:\\n"
@@ -178,8 +207,14 @@ char *construct_prompt_for_templates(char *protocol_name, char **final_msg)
     char *prompt_http_example = "For the HTTP protocol, the GET client request template is:\\n"
                                 "GET: [\\\"GET <<VALUE>>\\\\r\\\\n\\\"]";
 
+		// Additional Part
+		char *prompt_example_template = "For the %s protocol, the %s client request template is:\\n"
+																		"%s: [\\\"%s\\\"]";
+		char *prompt_example = NULL;
+		asprintf(&prompt_example, prompt_example_template, protocol_name, message_type, protocol_name, example_message);
+
     char *msg = NULL;
-    asprintf(&msg, "%s\\n%s\\nFor the %s protocol, all of client request templates are :", prompt_rtsp_example, prompt_http_example, protocol_name);
+    asprintf(&msg, "%s\\n%s\\nFor the %s protocol, all of client request templates are :", prompt_example, prompt_http_example, protocol_name);
     *final_msg = msg;
     /** Format of prompt_grammars
     prompt_grammars = [
@@ -193,7 +228,6 @@ char *construct_prompt_for_templates(char *protocol_name, char **final_msg)
 
     return prompt_grammars;
 }
-
 char *construct_prompt_for_remaining_templates(char *protocol_name, char *first_question, char *first_answer)
 {
     char *second_question = NULL;
@@ -1001,7 +1035,7 @@ char *get_method_name(char *message) {
 	char *method_name = strdup(first_word);
 
 	free(first_word);
-	
+
 	return method_name;
 }
 
