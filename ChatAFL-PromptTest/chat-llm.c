@@ -975,6 +975,36 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
  * For upgrade ChatAFL with seed input.
  */
 
+char *get_method_name(char *message) {
+	// Skip leading whitespace
+	while (isspace(*message)) {
+		message++;
+	}
+
+	// Find the length of the first word
+	const char *start = message;
+	while (*message && !isspace(*message)) {
+			message++;
+	}
+	int length = message - start;
+
+	// Allocate memory for the first word
+	char *first_word = (char *)malloc(length + 1);
+	if (first_word == NULL) {
+			return NULL;
+	}
+
+	// Copy the first word into the allocated memory
+	strncpy(first_word, start, length);
+	first_word[length] = '\0';
+
+	char *method_name = strdup(first_word);
+
+	free(first_word);
+	
+	return method_name;
+}
+
 char *extract_text_between_brackets(char *response) {
   char *message = NULL;
 
@@ -1057,7 +1087,7 @@ char *extract_text_between_backtics(char *response) {
 
 char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content) {
   char *template =  "In the %s protocol, %s protocol message sequence is as follows. "
-                    "Extract first message of %s protocol message sequence.\\n"
+                    "Extract first message of %s protocol message sequence without protocol name.\\n"
                     "Desired Format:\\n[    ]\\n"
                     "Message Sequence:\\n%.*s\\n";
 
@@ -1164,22 +1194,18 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 	// 				"```\\n";
 	char *example_HTTP =
 					"For the HTTP protocol, Converting all field values to \\\"<<VALUE>>\\\" is:\\\\n"
-					"* input\\n"
-					// "```\\n"
+					"* input:\\n"
 					"[GET /hello.txt HTTP/1.1 \\\\r\\\\n"
 					"Host: 127.0.0.1:8080 \\\\r\\\\n"
 					"User-Agent: curl/8.0.1 \\\\r\\\\n"
 					"Accept: */* \\\\r\\\\n"
 					"\\\\r\\\\n]"
-					// "```\\n"
-					"* output\\n"
-					// "```\\n"
+					"* output:\\n"
 					"[GET <<VALUE>> HTTP/1.1 \\\\r\\\\n"
 					"Host: <<VALUE>> \\\\r\\\\n"
 					"User-Agent: <<VALUE>> \\\\r\\\\n"
 					"Accept: <<VALUE>> \\\\r\\\\n"
 					"\\\\r\\\\n]";
-					// "```\\n";
 	// char *example_RTSP =
 	// 				"For the RTSP protocol, Converting all field values to \\\"<<VALUE>>\\\" is:\\n"
 	// 				"* input\\n"
@@ -1200,22 +1226,18 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 	// 				"```\\n";
 	char *example_RTSP =
 					"For the RTSP protocol, Converting all field values to \\\"<<VALUE>>\\\" is:\\n"
-					"* input\\n"
-					// "```\\n"
+					"* input:\\n"
 					"[DESCRIBE rtsp://127.0.0.1:8554/matroskaFileTest RTSP/1.0 \\\\r\\\\n"
 					"CSeq: 2 \\\\r\\\\n"
 					"User-Agent: ./testRTSPClient (LIVE555 Streaming Media v2018.08.28) \\\\r\\\\n"
 					"Accept: application/sdp \\\\r\\\\n"
 					"\\\\r\\\\n]\\n"
-					// "```\\n"
-					"* output\\n"
-					// "```\\n"
+					"* output:\\n"
 					"[DESCRIBE <<VALUE>> \\\\r\\\\n"
 					"CSeq: <<VALUE>> \\\\r\\\\n"
 					"User-Agent: <<VALUE>> \\\\r\\\\n"
 					"Accept: <<VALUE>> \\\\r\\\\n"
 					"\\\\r\\\\n]\\n";
-					// "```\\n";
 
 		// char *template =
 		// 			"%s\\n"
@@ -1229,12 +1251,9 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 					"%s\\n"
 					"%s\\n"
 					"For the %s protocol message. Convert all field values to \\\"<<VALUE>>\\\" is:\\n"
-					"* input\\n"
-					// "```\\n"
+					"* input:\\n"
 					"[%s]"
-					// "```\\n";
-					"* output\\n"
-					"[     ]";
+					"* output:\\n";
 
 	asprintf(&prompt, template, example_HTTP, example_RTSP, protocol_name, message);
 	

@@ -435,6 +435,8 @@ void setup_llm_grammars()
 {
 
   ACTF("Getting grammars from LLM...");
+
+  // Upgrade version 1
   char *first_message = get_first_message(protocol_name, in_dir);
   if (first_message == NULL) {
     printf("Error: first message is NULL.\n");
@@ -445,8 +447,9 @@ void setup_llm_grammars()
     printf("Error: converted message is NULL.\n");
   }
   printf("\n## Converted Message:\n\n%s\n\n", first_message_value);
-  
-  
+  char *message_type = get_method_name(first_message_value);
+  printf("\n## Message Type:\n%s\n\n", message_type);
+
   khash_t(consistency_table) *const_table = kh_init(consistency_table);
   char *first_question;
   char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question);
