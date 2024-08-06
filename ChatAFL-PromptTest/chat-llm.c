@@ -1060,7 +1060,7 @@ char *construct_prompt_for_getting_first_message(char *protocol_name, const char
 
   char *prompt = NULL;
   asprintf(&prompt, template, protocol_name, protocol_name, protocol_name, sequence_len, sequence_escaped_str);
-  // printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
+  printf("chat-llm.c/get_first_message-LLM prompt:\n %s\n", prompt);
   char *prompt_grammars = NULL;
 
   asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", prompt);
@@ -1120,7 +1120,7 @@ char *get_first_message(char *protocol_name, const char *in_dir){
 
     // Use LLM for getting first message
     response = chat_with_llm(prompt, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
-    // printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
+    printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
     
     first_message = extract_text_between_brackets(response);
 		if (first_message == NULL) {
@@ -1183,12 +1183,13 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 					"```\\n";
 
 	asprintf(&prompt, template, example_HTTP, example_RTSP, protocol_name, message);
-
+	
+	printf("## chat-llm.c/convert_message_field_to_value-prompt:\n\n%s \n\n", prompt);
   char *prompt_grammars = NULL;
   asprintf(&prompt_grammars, "[{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}]", prompt);
 
 	char *response = chat_with_llm(prompt_grammars, "turbo", MAX_FIRST_MESSAGE_RETRIES, 0.5);
-	// printf("## chat-llm.c/convert_message_field_to_value-response:\n\n%s \n\n", response);
+	printf("## chat-llm.c/convert_message_field_to_value-response:\n\n%s \n\n", response);
 
 	asprintf(&converted_message, extract_text_between_backtics(response));
 
