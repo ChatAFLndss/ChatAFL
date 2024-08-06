@@ -436,9 +436,12 @@ void setup_llm_grammars()
 
   ACTF("Getting grammars from LLM...");
   char *first_message = get_first_message(protocol_name, in_dir);
-  // printf("## First Message of file:\n%s\n", first_message);
+  if (first_message == NULL) {
+    printf("Error: first message is NULL.\n");
+  }
+  printf("\n## First Message of file:\n%s\n\n", first_message);
   char *first_message_value = convert_message_field_to_value(protocol_name, first_message);
-  // printf("## afl-fuzz.c/setup_llm_grammars/Converted Message:\n\n%s\n\n", first_message_value);
+  printf("\n## Converted Message:\n\n%s\n\n", first_message_value);
   
   
   khash_t(consistency_table) *const_table = kh_init(consistency_table);

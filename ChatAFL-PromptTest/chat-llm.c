@@ -1001,11 +1001,7 @@ char *extract_text_between_brackets(char *response) {
   strncpy(result, start + 1, length);
   result[length] = '\0';
 
-  json_object *obj = json_object_new_string(result);
-  const char *parsed_message = json_object_to_json_string(obj);
-  parsed_message++;
-  int message_len = strlen(parsed_message) - 1;
-  asprintf(&message, "%.*s", message_len, parsed_message);
+	message = strdup(result);
 
   free(result);
   // printf("%s\n", message);
@@ -1013,40 +1009,42 @@ char *extract_text_between_brackets(char *response) {
 }
 
 char *extract_text_between_backtics(char *response) {
-  char *message = NULL;
+    char *message = NULL;
 
-  // Find start ```
-  const char* start = strstr(response, "```");
-  if (start == NULL) {
-      return NULL;
-  }
-  // Find end ```
-  const char* end = strstr(start, "```");
-  if (end == NULL) {
-      return NULL;
-  }
-  int length = end - start + 3;
-  if (length <= 0) {
-      return NULL;
-  }
-  char* result = (char*)malloc(length + 1);
-  if (result == NULL) {
-      return NULL;
-  }
+    // Find start ```
+    const char *start = strstr(response, "```");
+    if (start == NULL) {
+        return NULL;
+    }
+    start += 3; // Move past the first ```
 
-  // Copy text between brackets
-  strncpy(result, start + 3, length);
-  result[length] = '\0';
+    // Find end ```
+    const char *end = strstr(start, "```");
+    if (end == NULL) {
+        return NULL;
+    }
 
-  json_object *obj = json_object_new_string(result);
-  const char *parsed_message = json_object_to_json_string(obj);
-  parsed_message++;
-  int message_len = strlen(parsed_message) - 1;
-  asprintf(&message, "%.*s", message_len, parsed_message);
+    // Calculate length of text between ```
+    int length = end - start;
+    if (length <= 0) {
+        return NULL;
+    }
 
-  free(result);
-  // printf("%s\n", message);
-  return message;
+    // Allocate memory for the result
+    char *result = (char *)malloc(length + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    // Copy text between ```
+    strncpy(result, start, length);
+    result[length] = '\0';
+
+    message = strdup(result);
+
+    free(result);
+		// printf("%s\n", message);
+    return message;
 }
 
 char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content) {
@@ -1125,6 +1123,9 @@ char *get_first_message(char *protocol_name, const char *in_dir){
     // printf("chat-llm.c/get_first_message-LLM response of file %s:\n %s\n", nl_file_name, response);
     
     first_message = extract_text_between_brackets(response);
+		if (first_message == NULL) {
+			first_message = extract_text_between_backtics(response);
+		}
 
     goto RETURN_FIRST_MESSAGE;
   }
