@@ -1311,8 +1311,7 @@ char *transform_message(const char *input) {
 	const char *src = input;
 	size_t len = strlen(input);
 	
-	// 계산된 크기보다 약간 여유 있는 메모리를 할당
-	char *output = (char *)malloc(len * 6 + 50); // \r, \n, \", , 추가로 인해 크기가 증가함
+	char *output = (char *)malloc(len * 6 + 50);
 	char *dest = output;
 
 	if (output == NULL) {
@@ -1324,28 +1323,32 @@ char *transform_message(const char *input) {
 	*dest++ = '\"';
 
 	while (*src) {
-			if (*src == '\n') {
-					*dest++ = '\\';
-					*dest++ = 'r';
-					*dest++ = '\\';
-					*dest++ = 'n';
-					*dest++ = '\\';
-					*dest++ = '\"';
-					*dest++ = ',';
-					*dest++ = '\\';
-					*dest++ = '\"';
-			} else if (*src == '\"') {
-					*dest++ = '\\';
-					*dest++ = '\"';
-			} else {
-					*dest++ = *src;
-			}
-			src++;
+		if (*src == '\\' && *(src + 1) == 'n') {
+			*dest++ = '\\';
+			*dest++ = '\\';
+			*dest++ = 'r';
+			*dest++ = '\\';
+			*dest++ = '\\';
+			*dest++ = 'n';
+			*dest++ = '\\';
+			*dest++ = '\"';
+			*dest++ = ',';
+			*dest++ = '\\';
+			*dest++ = '\"';
+		} else if (*src == '\"') {
+			*dest++ = '\\';
+			*dest++ = '\"';
+		} else {
+			*dest++ = *src;
+		}
+		src++;
 	}
 
 	// Adding the last segment
 	*dest++ = '\\';
+	*dest++ = '\\';
 	*dest++ = 'r';
+	*dest++ = '\\';
 	*dest++ = '\\';
 	*dest++ = 'n';
 	*dest++ = '\\';
@@ -1354,7 +1357,9 @@ char *transform_message(const char *input) {
 	*dest++ = '\\';
 	*dest++ = '\"';
 	*dest++ = '\\';
+	*dest++ = '\\';
 	*dest++ = 'r';
+	*dest++ = '\\';
 	*dest++ = '\\';
 	*dest++ = 'n';
 	*dest++ = '\\';
