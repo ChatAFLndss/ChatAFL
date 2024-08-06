@@ -214,7 +214,7 @@ char *construct_prompt_for_templates(char *protocol_name, char **final_msg, char
 		asprintf(&prompt_example, prompt_example_template, protocol_name, message_type, protocol_name, example_message);
 
     char *msg = NULL;
-    asprintf(&msg, "%s\\n%s\\nFor the %s protocol, all of client request templates are :", prompt_example, prompt_http_example, protocol_name);
+    asprintf(&msg, "%s\\n%s\\n%s\\nFor the %s protocol, all of client request templates are :", prompt_example, prompt_rtsp_example, prompt_http_example, protocol_name);
     *final_msg = msg;
     /** Format of prompt_grammars
     prompt_grammars = [

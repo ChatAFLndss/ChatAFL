@@ -470,7 +470,7 @@ void setup_llm_grammars()
     if (remaining_templates == NULL)
       goto free_remaining;
 
-    // printf("## Remaining templates:\n %s\n", remaining_templates);
+    printf("## Remaining templates:\n%s\n\n", remaining_templates);
 
     char *combined_templates = NULL;
     asprintf(&combined_templates, "%s\n%s", templates_answer, remaining_templates);
