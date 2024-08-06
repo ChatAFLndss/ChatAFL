@@ -19,25 +19,25 @@ Similarly 1700 is for the example request in the seed enrichment
 #define HISTORY_PROMPT_LENGTH 1300
 #define EXAMPLE_SEQUENCE_PROMPT_LENGTH 1700
 
-#define TEMPLATE_CONSISTENCY_COUNT 1
+#define TEMPLATE_CONSISTENCY_COUNT 5
 
 // Maximum amount of retries for the state stall
-#define STALL_RETRIES 1
+#define STALL_RETRIES 2
 
 // Maximum amount of tries to get the grammars
-#define GRAMMAR_RETRIES 1
+#define GRAMMAR_RETRIES 5
 
 // Maximum amount
-#define MESSAGE_TYPE_RETRIES 1
+#define MESSAGE_TYPE_RETRIES 5
 
 //Maximum amount of tries for an enrichment
-#define ENRICHMENT_RETRIES 1
+#define ENRICHMENT_RETRIES 5
 
 // Maximum number of messages to be added
-#define MAX_ENRICHMENT_MESSAGE_TYPES 1
+#define MAX_ENRICHMENT_MESSAGE_TYPES 2
 
 // Maximum number of messages to examine for addition
-#define MAX_ENRICHMENT_CORPUS_SIZE 7
+#define MAX_ENRICHMENT_CORPUS_SIZE 10
 
 // Maximum amount of tries to get the first message
 #define MAX_FIRST_MESSAGE_RETRIES 1

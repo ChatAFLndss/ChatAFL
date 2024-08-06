@@ -10395,7 +10395,7 @@ int main(int argc, char **argv)
     message_types_set = kh_init(strSet);
 
     setup_llm_grammars();
-    enrich_testcases();
+    // enrich_testcases();
   }
 
   // printf("protocol_name: %s\n", protocol_name);
