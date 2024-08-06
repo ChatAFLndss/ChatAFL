@@ -1078,46 +1078,46 @@ char *extract_text_between_brackets(char *response) {
 }
 
 char *extract_text_between_backtics(char *response) {
-    char *message = NULL;
+	char *message = NULL;
 
-    // Find start ```
-    const char *start = strstr(response, "```");
-    if (start == NULL) {
-        return NULL;
-    }
-    start += 3; // Move past the first ```
+	// Find start ```
+	const char *start = strstr(response, "```");
+	if (start == NULL) {
+			return NULL;
+	}
+	start += 3; // Move past the first ```
 
-    // Find end ```
-    const char *end = strstr(start, "```");
-    if (end == NULL) {
-        return NULL;
-    }
+	// Find end ```
+	const char *end = strstr(start, "```");
+	if (end == NULL) {
+			return NULL;
+	}
 
-    // Calculate length of text between ```
-    int length = end - start;
-    if (length <= 0) {
-        return NULL;
-    }
+	// Calculate length of text between ```
+	int length = end - start;
+	if (length <= 0) {
+			return NULL;
+	}
 
-    // Allocate memory for the result
-    char *result = (char *)malloc(length + 1);
-    if (result == NULL) {
-        return NULL;
-    }
+	// Allocate memory for the result
+	char *result = (char *)malloc(length + 1);
+	if (result == NULL) {
+			return NULL;
+	}
 
-    // Copy text between ```
-    strncpy(result, start, length);
-    result[length] = '\0';
+	// Copy text between ```
+	strncpy(result, start, length);
+	result[length] = '\0';
 
 	json_object *obj = json_object_new_string(result);
-  const char *parsed_message = json_object_to_json_string(obj);
-  parsed_message++;
-  int message_len = strlen(parsed_message) - 1;
-  asprintf(&message, "%.*s", message_len, parsed_message);
+	const char *parsed_message = json_object_to_json_string(obj);
+	parsed_message++;
+	int message_len = strlen(parsed_message) - 1;
+	asprintf(&message, "%.*s", message_len, parsed_message);
 
-    free(result);
-		// printf("%s\n", message);
-    return message;
+	free(result);
+	// printf("%s\n", message);
+	return message;
 }
 
 char *construct_prompt_for_getting_first_message(char *protocol_name, const char *file_content) {
@@ -1308,45 +1308,56 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 }
 
 char *transform_message(const char *input) {
-    size_t new_length = strlen(input) * 3; // Allocate enough space
-    char *transformed = (char *)malloc(new_length);
-    if (!transformed) {
-        perror("Failed to allocate memory");
-        exit(EXIT_FAILURE);
-    }
+	size_t new_length = strlen(input) * 3; // Allocate enough space
+	char *transformed = (char *)malloc(new_length);
+	if (!transformed) {
+			perror("Failed to allocate memory");
+			exit(EXIT_FAILURE);
+	}
 
-    const char *src = input;
-    char *dest = transformed;
+	const char *src = input;
+	char *dest = transformed;
 
-    *dest++ = '"'; // Add the first quote
-    while (*src) {
-        if (src[0] == '\r' && src[1] == '\n') {
-            // If \r\n is already present
-            strcpy(dest, "\\r\\n\", \"");
-            dest += 8;
-            src += 2;
-        } else if (*src == '\n') {
-            // Convert \n to \r\n
-            strcpy(dest, "\\r\\n\", \"");
-            dest += 8;
-            src++;
-        } else if (*src == '\\') {
-            // Handle backslash
-            strcpy(dest, "\\\\");
-            dest += 2;
-            src++;
-        } else if (*src == '"') {
-            // Handle quote
-            strcpy(dest, "\\\"");
-            dest += 2;
-            src++;
-        } else {
-            // Handle other characters
-            *dest++ = *src++;
-        }
-    }
-    strcpy(dest, "\""); // Add the last quote
-    return transformed;
+	*dest++ = '"'; // Add the first quote
+	while (*src) {
+			if (src[0] == '\r' && src[1] == '\n') {
+					// If \r\n is already present
+					strcpy(dest, "\\r\\n\", \"");
+					dest += 8;
+					src += 2;
+			} else if (*src == '\n') {
+					// Convert \n to \r\n
+					strcpy(dest, "\\r\\n\", \"");
+					dest += 8;
+					src++;
+			} else if (*src == '\\') {
+					// Handle backslash
+					strcpy(dest, "\\\\");
+					dest += 2;
+					src++;
+			} else if (*src == '"') {
+					// Handle quote
+					strcpy(dest, "\\\"");
+					dest += 2;
+					src++;
+			} else {
+					// Handle other characters
+					*dest++ = *src++;
+			}
+	}
+	strcpy(dest, "\""); // Add the last quote
+
+	char *transformed_message = NULL;
+
+	json_object *obj = json_object_new_string(transformed);
+  const char *parsed_message = json_object_to_json_string(obj);
+  parsed_message++;
+  int message_len = strlen(parsed_message) - 1;
+  asprintf(&transformed_message, "%.*s", message_len, parsed_message);
+
+  free(transformed);
+
+	return transformed_message;
 }
 
 // // For debugging
