@@ -441,6 +441,9 @@ void setup_llm_grammars()
   }
   printf("\n## First Message of file:\n%s\n\n", first_message);
   char *first_message_value = convert_message_field_to_value(protocol_name, first_message);
+  if (first_message == NULL) {
+    printf("Error: converted message is NULL.\n");
+  }
   printf("\n## Converted Message:\n\n%s\n\n", first_message_value);
   
   
