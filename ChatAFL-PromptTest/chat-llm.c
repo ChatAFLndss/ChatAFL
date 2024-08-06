@@ -1001,7 +1001,11 @@ char *extract_text_between_brackets(char *response) {
   strncpy(result, start + 1, length);
   result[length] = '\0';
 
-	message = strdup(result);
+	json_object *obj = json_object_new_string(result);
+  const char *parsed_message = json_object_to_json_string(obj);
+  parsed_message++;
+  int message_len = strlen(parsed_message) - 1;
+  asprintf(&message, "%.*s", message_len, parsed_message);
 
   free(result);
   // printf("%s\n", message);
@@ -1040,7 +1044,11 @@ char *extract_text_between_backtics(char *response) {
     strncpy(result, start, length);
     result[length] = '\0';
 
-    message = strdup(result);
+	json_object *obj = json_object_new_string(result);
+  const char *parsed_message = json_object_to_json_string(obj);
+  parsed_message++;
+  int message_len = strlen(parsed_message) - 1;
+  asprintf(&message, "%.*s", message_len, parsed_message);
 
     free(result);
 		// printf("%s\n", message);
