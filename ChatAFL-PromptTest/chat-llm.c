@@ -1307,6 +1307,48 @@ char *convert_message_field_to_value(char *protocol_name, char *message) {
 	return converted_message;
 }
 
+char *transform_message(const char *input) {
+    size_t new_length = strlen(input) * 3; // Allocate enough space
+    char *transformed = (char *)malloc(new_length);
+    if (!transformed) {
+        perror("Failed to allocate memory");
+        exit(EXIT_FAILURE);
+    }
+
+    const char *src = input;
+    char *dest = transformed;
+
+    *dest++ = '"'; // Add the first quote
+    while (*src) {
+        if (src[0] == '\r' && src[1] == '\n') {
+            // If \r\n is already present
+            strcpy(dest, "\\r\\n\", \"");
+            dest += 8;
+            src += 2;
+        } else if (*src == '\n') {
+            // Convert \n to \r\n
+            strcpy(dest, "\\r\\n\", \"");
+            dest += 8;
+            src++;
+        } else if (*src == '\\') {
+            // Handle backslash
+            strcpy(dest, "\\\\");
+            dest += 2;
+            src++;
+        } else if (*src == '"') {
+            // Handle quote
+            strcpy(dest, "\\\"");
+            dest += 2;
+            src++;
+        } else {
+            // Handle other characters
+            *dest++ = *src++;
+        }
+    }
+    strcpy(dest, "\""); // Add the last quote
+    return transformed;
+}
+
 // // For debugging
 // // gcc -g -o chat-llm chat-llm.c chat-llm.h -lcurl -ljson-c -lpcre2-8
 // int main(int argc, char **argv)

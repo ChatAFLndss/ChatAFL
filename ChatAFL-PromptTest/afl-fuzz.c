@@ -446,13 +446,14 @@ void setup_llm_grammars()
   if (first_message == NULL) {
     printf("Error: converted message is NULL.\n");
   }
-  printf("\n## Converted Message:\n\n%s\n\n", first_message_value);
+  char *converted_message = transform_message(first_message_value);
+  printf("\n## Converted Message:\n\n%s\n\n", converted_message);
   char *message_type = get_method_name(first_message_value);
   printf("\n## Message Type:\n%s\n\n", message_type);
 
   khash_t(consistency_table) *const_table = kh_init(consistency_table);
   char *first_question;
-  char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question, message_type, first_message_value);
+  char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question, message_type, converted_message);
 
   for (int iter = 0; iter < TEMPLATE_CONSISTENCY_COUNT; iter++)
   {

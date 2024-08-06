@@ -91,6 +91,7 @@ char *extract_text_between_brackets(char *response);
 char *extract_text_between_backtics(char *response);
 char *convert_message_field_to_value(char *protocol_name, char *message);
 char *get_method_name(char *message);
+char *transform_message(const char *input);
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);
