@@ -440,12 +440,20 @@ void setup_llm_grammars()
   char *first_message = get_first_message(protocol_name, in_dir);
   if (first_message == NULL) {
     printf("Error: first message is NULL.\n");
+    exit(1)
   }
   printf("\n## First Message of file:\n%s\n\n", first_message);
   char *first_message_value = convert_message_field_to_value(protocol_name, first_message);
-  if (first_message == NULL) {
+  if (first_message_value == NULL) {
     printf("Error: converted message is NULL.\n");
+    exit(1)
   }
+  int value_count = 0;
+  for (char *value_check = strstr(first_message_value, "<<VALUE>>"); value_check == NULL && value_count < MAX_VALUE_MESSAGE_RETRIES; value_count++) {
+    first_message_value = convert_message_field_to_value(protocol_name, first_message);
+    value_check = strstr(first_message_value, "<<VALUE>>");
+  }
+  
   char *converted_message = transform_message(first_message_value);
   printf("\n## Converted Message:\n\n%s\n\n", converted_message);
   char *message_type = get_method_name(first_message_value);

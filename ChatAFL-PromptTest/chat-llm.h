@@ -42,6 +42,8 @@ Similarly 1700 is for the example request in the seed enrichment
 // Maximum amount of tries to get the first message
 #define MAX_FIRST_MESSAGE_RETRIES 1
 
+#define MAX_VALUE_MESSAGE_RETRIES 5
+
 #define PCRE2_CODE_UNIT_WIDTH 8 // Characters are 8 bits
 #include <pcre2.h>
 
