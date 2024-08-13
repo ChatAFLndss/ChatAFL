@@ -966,7 +966,7 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     json_object_put(sequence_escaped);
 
     char *response = chat_with_llm(prompt, "instruct", ENRICHMENT_RETRIES, 0.5);
-
+    printf("## Response:\n%s\n\n", response);
     free(prompt);
 
     return response;
