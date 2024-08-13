@@ -972,36 +972,35 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     return response;
 }
 
-char* bytes_to_hex_string(const unsigned char* bytes, size_t length) {
-    char* hex_string = (char*)malloc((length * 2 + 1) * sizeof(char));
+char* bytes_to_hex_string(const unsigned char* bytes, size_t byte_length) {
+    char* hex_string = (char*)malloc((byte_length * 2 + 1) * sizeof(char));
     if (hex_string == NULL) {
         return NULL;
     }
 
-    for (size_t i = 0; i < length; ++i) {
+    for (size_t i = 0; i < byte_length; ++i) {
         sprintf(hex_string + i * 2, "%02x", bytes[i]);
     }
 
-    hex_string[length * 2] = '\0';
+    hex_string[byte_length * 2] = '\0';
 
     return hex_string;
 }
 
-char* hex_string_to_bytes(const char* hex_string, size_t* length) {
+char* hex_string_to_bytes(const char* hex_string) {
     size_t hex_len = strlen(hex_string);
 
     if (hex_len % 2 != 0) {
         return NULL;
     }
 
-    *length = hex_len / 2;
-
-    unsigned char* bytes = (unsigned char*)malloc(*length * sizeof(unsigned char));
+    size_t byte_length = hex_len / 2;
+    unsigned char* bytes = (unsigned char*)malloc(byte_length * sizeof(unsigned char));
     if (bytes == NULL) {
         return NULL;
     }
 
-    for (size_t i = 0; i < *length; ++i) {
+    for (size_t i = 0; i < byte_length; ++i) {
         sscanf(hex_string + 2 * i, "%2hhx", &bytes[i]);
     }
 
