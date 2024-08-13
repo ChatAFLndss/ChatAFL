@@ -2663,8 +2663,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     nl_file_content[fsize] = '\0';
     printf("## File content:\n %s\n", nl_file_content);
     printf("# hex:\n%s\n", nl_file_content);
-    for (int i = 0, i < fsize; i++)
-      printf("%x\n", nl_file_content[i]);
+    for (int i = 0, i < fsize; i++) {printf("%x\n", nl_file_content[i]);}
     fclose(nl_file);
     free(nl_file_path);
 
