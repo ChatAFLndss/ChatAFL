@@ -83,6 +83,7 @@ char *format_request_message(char *message);
 // For binary protocol
 char* hex_string_to_bytes(const char* hex_string);
 char* bytes_to_hex_string(const unsigned char* bytes, size_t byte_length);
+unsigned char* read_file_bytes(const char* file_path, size_t* byte_length);
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);

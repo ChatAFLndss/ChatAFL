@@ -2662,14 +2662,23 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     fread(nl_file_content, fsize, 1, nl_file);
     nl_file_content[fsize] = '\0';
     printf("## File content:\n %s\n", nl_file_content);
-    // printf("# hex:\n%s\n", nl_file_content);
-    // for (int i = 0; i < fsize; i++) {printf("%x\n", nl_file_content[i]);}
     fclose(nl_file);
-    free(nl_file_path);
 
-    char *hex_string_file_content = bytes_to_hex_string(nl_file_content, strlen(nl_file_content));
-    printf("## hex_string_file_content:\n%s\n\n", hex_string_file_content);
-    free(hex_string_file_content);
+    // Read byte sequence from file
+    size_t byte_length;
+    unsigned char* file_bytes = read_file_bytes(nl_file_path, &byte_length);
+    if (file_bytes != NULL) {
+        printf("File byte sequence:\n");
+        for (size_t i = 0; i < byte_length; ++i) {
+            printf("%02x ", file_bytes[i]);
+        }
+        printf("\n");
+
+        free(file_bytes);  // free memory
+    } else {
+        printf("Failed to read file bytes.\n");
+    }
+    free(nl_file_path);
 
     u32 region_count = 0;
     region_t *regions = (*extract_requests)(nl_file_content, fsize, &region_count);

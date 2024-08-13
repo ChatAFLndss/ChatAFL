@@ -1007,6 +1007,49 @@ char* hex_string_to_bytes(const char* hex_string) {
     return bytes;
 }
 
+// 파일의 바이트 시퀀스를 반환하는 함수
+unsigned char* read_file_bytes(const char* file_path, size_t* byte_length) {
+    FILE* file = fopen(file_path, "rb");  // 바이너리 모드로 파일 열기
+    if (file == NULL) {
+        perror("Failed to open file");
+        return NULL;
+    }
+
+    // 파일 크기 계산
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    if (file_size < 0) {
+        perror("Failed to determine file size");
+        fclose(file);
+        return NULL;
+    }
+
+    // 파일 크기에 맞게 메모리 할당
+    unsigned char* buffer = (unsigned char*)malloc(file_size * sizeof(unsigned char));
+    if (buffer == NULL) {
+        perror("Failed to allocate memory");
+        fclose(file);
+        return NULL;
+    }
+
+    // 파일 내용 읽기
+    size_t read_size = fread(buffer, sizeof(unsigned char), file_size, file);
+    if (read_size != file_size) {
+        perror("Failed to read file");
+        free(buffer);
+        fclose(file);
+        return NULL;
+    }
+
+    // 파일 닫기
+    fclose(file);
+
+    *byte_length = file_size;
+    return buffer;
+}
+
 // // For debugging
 // // gcc -g -o chat-llm chat-llm.c chat-llm.h -lcurl -ljson-c -lpcre2-8
 // int main(int argc, char **argv)
