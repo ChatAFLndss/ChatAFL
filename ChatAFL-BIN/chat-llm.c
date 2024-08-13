@@ -1027,30 +1027,38 @@ unsigned char* read_file_bytes(const char* file_path) {
         return NULL;
     }
 
-    // 파일 크기에 +1을 해서 널 종료 문자를 위한 메모리 할당
-    char* buffer = (char*)malloc((file_size + 1) * sizeof(char));
-    if (buffer == NULL) {
+    // 16진수 문자열 크기: 각 바이트는 2자리 16진수 + 1(널 문자)로 계산
+    char* hex_string = (char*)malloc((file_size * 2 + 1) * sizeof(char));
+    if (hex_string == NULL) {
         perror("Failed to allocate memory");
         fclose(file);
         return NULL;
     }
 
-    // 파일 내용 읽기
-    size_t read_size = fread(buffer, sizeof(char), file_size, file);
-    if (read_size != file_size) {
-        perror("Failed to read file");
-        free(buffer);
+    unsigned char* buffer = (unsigned char*)malloc(file_size * sizeof(unsigned char));
+    if (buffer == NULL) {
+        perror("Failed to allocate memory for buffer");
+        free(hex_string);
         fclose(file);
         return NULL;
     }
 
-    // 널 종료 문자 추가
-    buffer[file_size] = '\0';
+    // 파일 내용 읽기
+    fread(buffer, sizeof(unsigned char), file_size, file);
 
-    // 파일 닫기
+    // 바이트 데이터를 16진수 문자열로 변환
+    for (long i = 0; i < file_size; ++i) {
+        sprintf(hex_string + i * 2, "%02x", buffer[i]);
+    }
+
+    // 널 종료 문자 추가
+    hex_string[file_size * 2] = '\0';
+
+    // 메모리 정리
+    free(buffer);
     fclose(file);
 
-    return buffer;
+    return hex_string;
 }
 
 // // For debugging
