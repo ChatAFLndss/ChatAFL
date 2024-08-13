@@ -2662,6 +2662,9 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     fread(nl_file_content, fsize, 1, nl_file);
     nl_file_content[fsize] = '\0';
     printf("## File content:\n %s\n", nl_file_content);
+    printf("# hex:\n%s\n", nl_file_content);
+    for (int i = 0, i < fsize; i++)
+      printf("%x\n", nl_file_content[i]);
     fclose(nl_file);
     free(nl_file_path);
 
@@ -2732,7 +2735,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
         // Check whether the client_request_answer is the same as the nl_file_content or if the client_request_answer is empty
         char *formatted_nl_file_content = format_string(nl_file_content);
         char *unescaped_client_requests = unescape_string(client_request_answer);
-        char *byte_file_content = hex_string_to_bytes(unescaped_client_requests)
+        char *byte_file_content = hex_string_to_bytes(unescaped_client_requests);
         char *formatted_unescaped_client_requests = format_string(byte_file_content);
         
         printf("## Formatted answer from LLM:\n%s\n\n", formatted_unescaped_client_requests);
