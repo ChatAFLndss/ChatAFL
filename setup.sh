@@ -6,7 +6,7 @@ if [ -z $KEY ]; then
 fi
 
 # Update the openAI key
-for x in ChatAFL ChatAFL-CL1 ChatAFL-CL2 ChatAFL-SEED;
+for x in ChatAFL ChatAFL-CL1 ChatAFL-CL2 ChatAFL-SEED ChatAFL-BIN;
 do
   sed -i "s/#define OPENAI_TOKEN \".*\"/#define OPENAI_TOKEN \"$KEY\"/" $x/chat-llm.h
 done
