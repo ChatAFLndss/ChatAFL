@@ -1009,7 +1009,7 @@ char* hex_string_to_bytes(const char* hex_string) {
 }
 
 // 파일의 바이트 시퀀스를 반환하는 함수
-unsigned char* read_file_bytes(const char* file_path, size_t* byte_length) {
+unsigned char* read_file_bytes(const char* file_path) {
     FILE* file = fopen(file_path, "rb");  // 바이너리 모드로 파일 열기
     if (file == NULL) {
         perror("Failed to open file");
@@ -1027,8 +1027,8 @@ unsigned char* read_file_bytes(const char* file_path, size_t* byte_length) {
         return NULL;
     }
 
-    // 파일 크기에 맞게 메모리 할당
-    unsigned char* buffer = (unsigned char*)malloc(file_size * sizeof(unsigned char));
+    // 파일 크기에 +1을 해서 널 종료 문자를 위한 메모리 할당
+    char* buffer = (char*)malloc((file_size + 1) * sizeof(char));
     if (buffer == NULL) {
         perror("Failed to allocate memory");
         fclose(file);
@@ -1036,7 +1036,7 @@ unsigned char* read_file_bytes(const char* file_path, size_t* byte_length) {
     }
 
     // 파일 내용 읽기
-    size_t read_size = fread(buffer, sizeof(unsigned char), file_size, file);
+    size_t read_size = fread(buffer, sizeof(char), file_size, file);
     if (read_size != file_size) {
         perror("Failed to read file");
         free(buffer);
@@ -1044,10 +1044,12 @@ unsigned char* read_file_bytes(const char* file_path, size_t* byte_length) {
         return NULL;
     }
 
+    // 널 종료 문자 추가
+    buffer[file_size] = '\0';
+
     // 파일 닫기
     fclose(file);
 
-    *byte_length = file_size;
     return buffer;
 }
 

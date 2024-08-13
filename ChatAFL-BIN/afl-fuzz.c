@@ -2665,14 +2665,9 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     fclose(nl_file);
 
     // Read byte sequence from file
-    size_t byte_length;
-    unsigned char* file_bytes = read_file_bytes(nl_file_path, &byte_length);
+    unsigned char* file_bytes = read_file_bytes(nl_file_path);
     if (file_bytes != NULL) {
-        printf("File byte sequence:\n");
-        for (size_t i = 0; i < byte_length; ++i) {
-            printf("%02x ", file_bytes[i]);
-        }
-        printf("\n");
+        printf("File byte string:\n%s\n\n", file_bytes);
     } else {
         printf("Failed to read file bytes.\n");
     }
