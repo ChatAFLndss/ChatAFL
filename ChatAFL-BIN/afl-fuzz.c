@@ -2749,7 +2749,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
         if (formatted_unescaped_client_requests == NULL || strcmp(formatted_unescaped_client_requests, formatted_nl_file_content) == 0)
         {
           printf("## Skip the same seed\n");
-          free(file_bytes);
+          // free(file_bytes);
           continue;
         }
         free(file_bytes);
