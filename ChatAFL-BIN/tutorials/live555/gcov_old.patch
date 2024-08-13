@@ -1,0 +1,109 @@
+diff --git a/BasicUsageEnvironment/BasicTaskScheduler.cpp b/BasicUsageEnvironment/BasicTaskScheduler.cpp
+index f96b27f..2669078 100644
+--- a/BasicUsageEnvironment/BasicTaskScheduler.cpp
++++ b/BasicUsageEnvironment/BasicTaskScheduler.cpp
+@@ -78,6 +78,7 @@ void BasicTaskScheduler::SingleStep(unsigned maxDelayTime) {
+   if (tv_timeToDelay.tv_sec > MAX_TV_SEC) {
+     tv_timeToDelay.tv_sec = MAX_TV_SEC;
+   }
++
+   // Also check our "maxDelayTime" parameter (if it's > 0):
+   if (maxDelayTime > 0 &&
+       (tv_timeToDelay.tv_sec > (long)maxDelayTime/MILLION ||
+diff --git a/Makefile b/Makefile
+index f9f74d6..e25af5f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,16 +1,16 @@
+ ##### Change the following for your environment:
+-COMPILE_OPTS =		$(INCLUDES) -I. $(EXTRA_LDFLAGS) -DBSD=1 -O -DSOCKLEN_T=socklen_t -DHAVE_SOCKADDR_LEN=1 -DTIME_BASE=int
++COMPILE_OPTS =		$(INCLUDES) -I. -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DALLOW_RTSP_SERVER_PORT_REUSE=1
+ C =			c
+ C_COMPILER =		cc
+-C_FLAGS =		$(COMPILE_OPTS)
++C_FLAGS =		$(COMPILE_OPTS) $(CPPFLAGS) $(CFLAGS)
+ CPP =			cpp
+ CPLUSPLUS_COMPILER =	c++
+-CPLUSPLUS_FLAGS =	$(COMPILE_OPTS) -Wall
++CPLUSPLUS_FLAGS =	$(COMPILE_OPTS) -Wall -DBSD=1 $(CPPFLAGS) $(CXXFLAGS)
+ OBJ =			o
+-LINK =			c++ -o 
+-LINK_OPTS =		-L.
++LINK =			c++ -o
++LINK_OPTS =		-L. $(LDFLAGS)
+ CONSOLE_LINK_OPTS =	$(LINK_OPTS)
+-LIBRARY_LINK =		libtool -s -o 
++LIBRARY_LINK =		ar cr 
+ LIBRARY_LINK_OPTS =	
+ LIB_SUFFIX =			a
+ LIBS_FOR_CONSOLE_APPLICATION =
+diff --git a/liveMedia/GenericMediaServer.cpp b/liveMedia/GenericMediaServer.cpp
+index 4690516..b1d2bf3 100644
+--- a/liveMedia/GenericMediaServer.cpp
++++ b/liveMedia/GenericMediaServer.cpp
+@@ -319,7 +319,7 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
+   // (it will be encoded as a 8-digit hex number).  (We avoid choosing session id 0,
+   // because that has a special use by some servers.)
+   do {
+-    sessionId = (u_int32_t)our_random32();
++    sessionId = (u_int32_t)8888;
+     snprintf(sessionIdStr, sizeof sessionIdStr, "%08X", sessionId);
+   } while (sessionId == 0 || lookupClientSession(sessionIdStr) != NULL);
+ 
+diff --git a/liveMedia/RTSPServer.cpp b/liveMedia/RTSPServer.cpp
+index 87d723c..01a8b55 100644
+--- a/liveMedia/RTSPServer.cpp
++++ b/liveMedia/RTSPServer.cpp
+@@ -1594,6 +1594,7 @@ void RTSPServer::RTSPClientSession
+     }
+   }
+   if (noSubsessionsRemain) delete this;
++  //exit(0);
+ }
+ 
+ void RTSPServer::RTSPClientSession
+diff --git a/testProgs/testOnDemandRTSPServer.cpp b/testProgs/testOnDemandRTSPServer.cpp
+index 6bf44c1..e5d8bfd 100644
+--- a/testProgs/testOnDemandRTSPServer.cpp
++++ b/testProgs/testOnDemandRTSPServer.cpp
+@@ -20,6 +20,9 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
+ 
+ #include "liveMedia.hh"
+ #include "BasicUsageEnvironment.hh"
++#include <signal.h>
++#include <unistd.h>
++
+ 
+ UsageEnvironment* env;
+ 
+@@ -38,6 +41,13 @@ static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
+ 
+ static char newDemuxWatchVariable;
+ 
++
++void sig_handler(int signo)
++{
++  if (signo == SIGUSR1)
++    exit(0);
++}
++
+ static MatroskaFileServerDemux* matroskaDemux;
+ static void onMatroskaDemuxCreation(MatroskaFileServerDemux* newDemux, void* /*clientData*/) {
+   matroskaDemux = newDemux;
+@@ -51,6 +61,7 @@ static void onOggDemuxCreation(OggFileServerDemux* newDemux, void* /*clientData*
+ }
+ 
+ int main(int argc, char** argv) {
++  signal(SIGUSR1, sig_handler);
+   // Begin by setting up our usage environment:
+   TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+   env = BasicUsageEnvironment::createNew(*scheduler);
+@@ -65,7 +76,7 @@ int main(int argc, char** argv) {
+ #endif
+ 
+   // Create the RTSP server:
+-  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554, authDB);
++  RTSPServer* rtspServer = RTSPServer::createNew(*env, atoi(argv[1]), authDB);
+   if (rtspServer == NULL) {
+     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+     exit(1);
