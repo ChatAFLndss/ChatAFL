@@ -2663,6 +2663,11 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     nl_file_content[fsize] = '\0';
     printf("## File content:\n %s\n", nl_file_content);
     printf("# hex:\n%s\n", nl_file_content);
+
+    
+    char *hex_string_file_content = bytes_to_hex_string(nl_file_content, strlen(nl_file_content));
+    printf("## hex_string_file_content:\n%s\n\n", hex_string_file_content);
+    free(hex_string_file_content);
     for (int i = 0; i < fsize; i++) {printf("%x\n", nl_file_content[i]);}
     fclose(nl_file);
     free(nl_file_path);
@@ -2715,9 +2720,6 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
         kh_del(strSet, messages, x);
       }
     }
-
-    char *hex_string_file_content = bytes_to_hex_string(nl_file_content, strlen(nl_file_content));
-    printf("## hex_string_file_content:\n%s\n\n", hex_string_file_content);
 
     message_set_list message_subsets = message_combinations(messages,MAX_ENRICHMENT_MESSAGE_TYPES);
 
