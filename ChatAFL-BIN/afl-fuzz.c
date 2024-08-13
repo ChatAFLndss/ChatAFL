@@ -2673,8 +2673,6 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
             printf("%02x ", file_bytes[i]);
         }
         printf("\n");
-
-        free(file_bytes);  // free memory
     } else {
         printf("Failed to read file bytes.\n");
     }
@@ -2736,25 +2734,27 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
       khash_t(strSet)* subset = kv_A(message_subsets,i); 
 
       // Try enriching the sequence
-        char *client_request_answer = enrich_sequence(hex_string_file_content, subset);
+        char *client_request_answer = enrich_sequence(file_bytes, subset);
 
         if (client_request_answer == NULL)
           continue;
 
         // Check whether the client_request_answer is the same as the nl_file_content or if the client_request_answer is empty
-        char *formatted_nl_file_content = format_string(nl_file_content);
+        char *formatted_nl_file_content = format_string(file_bytes);
         char *unescaped_client_requests = unescape_string(client_request_answer);
-        char *byte_file_content = hex_string_to_bytes(unescaped_client_requests);
-        char *formatted_unescaped_client_requests = format_string(byte_file_content);
+        char *formatted_unescaped_client_requests = format_string(unescaped_client_requests);
         
         printf("## Formatted answer from LLM:\n%s\n\n", formatted_unescaped_client_requests);
         printf("## Formatted file content:\n%s\n\n", formatted_nl_file_content);
         if (formatted_unescaped_client_requests == NULL || strcmp(formatted_unescaped_client_requests, formatted_nl_file_content) == 0)
         {
           printf("## Skip the same seed\n");
+          free(file_bytes);
           continue;
         }
+        free(file_bytes);
 
+        char *byte_file_content = hex_string_to_bytes(unescaped_client_requests);
         unescaped_client_requests = format_request_message(byte_file_content);
 
         // Create the file in the same directory with the name enriched_state_<file_name>
