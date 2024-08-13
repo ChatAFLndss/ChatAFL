@@ -2721,7 +2721,8 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
       khash_t(strSet)* subset = kv_A(message_subsets,i); 
 
       // Try enriching the sequence
-        char *client_request_answer = enrich_sequence(nl_file_content, subset);
+        char *hex_string_file_content = bytes_to_hex_string(nl_file_content, len(nl_file_content))
+        char *client_request_answer = enrich_sequence(hex_string_file_content, subset);
 
         if (client_request_answer == NULL)
           continue;
@@ -2729,7 +2730,9 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
         // Check whether the client_request_answer is the same as the nl_file_content or if the client_request_answer is empty
         char *formatted_nl_file_content = format_string(nl_file_content);
         char *unescaped_client_requests = unescape_string(client_request_answer);
-        char *formatted_unescaped_client_requests = format_string(unescaped_client_requests);
+        char *byte_file_content = hex_string_to_bytes(unescaped_client_requests, len(unescaped_client_requests))
+        char *formatted_unescaped_client_requests = format_string(byte_file_content);
+        
         // printf("## Formatted answer from LLM:\n %s\n", formatted_unescaped_client_requests);
         // printf("## Formatted file content:\n %s\n", formatted_nl_file_content);
         if (formatted_unescaped_client_requests == NULL || strcmp(formatted_unescaped_client_requests, formatted_nl_file_content) == 0)
@@ -2738,7 +2741,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
           continue;
         }
 
-        unescaped_client_requests = format_request_message(unescaped_client_requests);
+        unescaped_client_requests = format_request_message(byte_file_content);
 
         // Create the file in the same directory with the name enriched_state_<file_name>
         char *enriched_file_name = malloc(strlen(nl_file_name) + 10 + 20);

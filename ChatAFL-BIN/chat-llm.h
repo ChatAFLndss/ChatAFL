@@ -80,6 +80,9 @@ char *extract_message_pattern(const char *header_str,
 char *extract_stalled_message(char *message, size_t message_len);
 char *format_request_message(char *message);
 
+// For binary protocol
+char* hex_string_to_bytes(const char* hex_string, size_t* length);
+char* bytes_to_hex_string(const unsigned char* bytes, size_t length);
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);

@@ -68,7 +68,12 @@ COPY --chown=ubuntu:ubuntu chatafl-seed chatafl-seed
 RUN cd chatafl-seed && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
-    
+
+COPY --chown=ubuntu:ubuntu chatafl-bin chatafl-bin
+RUN cd chatafl-seed && \
+    make clean all $MAKE_OPT && \
+    cd llvm_mode && make $MAKE_OPT
+        
 # Set up environment variables for AFLNet
 ENV WORKDIR="/home/ubuntu/experiments"
 ENV AFLNET="/home/ubuntu/aflnet"

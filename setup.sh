@@ -27,6 +27,9 @@ for subject in ./benchmark/subjects/*/*; do
 
   rm -r $subject/chatafl-seed 2>&1 >/dev/null
   cp -r ChatAFL-SEED $subject/chatafl-seed
+  
+  rm -r $subject/chatafl-bin 2>&1 >/dev/null
+  cp -r ChatAFL-BIN $subject/chatafl-bin
 done;
 
 # Build the docker images
