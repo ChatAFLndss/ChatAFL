@@ -11116,12 +11116,26 @@ int main(int argc, char **argv)
     // setup_llm_grammars();
     // enrich_testcases();
 
-		char *test = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_message_types(protocol_name),
+		// char *test = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_message_types(protocol_name),
+    //                                               "gpt-4o-mini",
+    //                                               construct_response_format_for_binary_protocol_message_types(),
+    //                                               1,
+    //                                               0.5);
+    // printf("================= Get protocol types =================\n%s\n\n", test);
+    char *byte_sequence = read_file_as_hex_string(argv[3]);
+    char *type1 = "";
+    char *type2 = "";
+		char *test2 = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_enrich_sequence(protocol_name, byte_sequence, type1, type2),
                                                   "gpt-4o-mini",
-                                                  construct_response_format_for_binary_protocol_message_types(),
+                                                  construct_response_format_for_binary_protocol_enrich_sequence(),
                                                   1,
                                                   0.5);
-    printf("================= Get protocol types =================\n%s\n\n", test);
+    if (byte_sequence != NULL) {
+      free(byte_sequence);
+    }
+    printf("================= Enrich Sequence =================\n%s\n\n", test2);
+
+    save_byte_sequence_to_file(test2, "./enriched.raw");
   }
 
   // printf("protocol_name: %s\n", protocol_name);

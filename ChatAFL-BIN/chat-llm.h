@@ -80,12 +80,6 @@ char *extract_message_pattern(const char *header_str,
 char *extract_stalled_message(char *message, size_t message_len);
 char *format_request_message(char *message);
 
-// For binary protocol
-char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature);
-void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name);
-char *construct_prompt_for_binary_protocol_message_types(char *protocol_name);
-char *construct_response_format_for_binary_protocol_message_types();
-
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);
 void get_protocol_message_types(char *state_prompt, khash_t(strSet) * message_types);
@@ -96,4 +90,17 @@ void write_new_seeds(char *enriched_file, char *contents);
 char *unescape_string(const char *input);
 char *format_string(char *state_string);
 message_set_list message_combinations(khash_t(strSet)* sequence, int size);
+
+// For binary protocol
+char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature);
+/* for get client message types (methods) */
+char *construct_prompt_for_binary_protocol_message_types(char *protocol_name);
+char *construct_response_format_for_binary_protocol_message_types();
+/* for enrich sequence */
+char *construct_prompt_for_binary_protocol_enrich_sequence(char *protocol_name, char *byte_sequence, char *type1, char *type2);
+char *construct_response_format_for_binary_protocol_enrich_sequence();
+/* utility */
+void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name);
+char *read_file_as_hex_string(const char *file_path);
+
 #endif // __CHAT_LLM_H

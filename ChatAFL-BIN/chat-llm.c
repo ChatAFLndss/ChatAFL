@@ -918,7 +918,7 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     const char *prompt_template =
         "The following is one sequence of client requests:\\n"
         "%.*s\\n"
-        "Please add the %.*s client requests in the proper locations, and the modified sequence of client requests. Output must be byte sequences. Result is:";
+        "Please add the %.*s client requests in the proper locations, and the modified sequence of client requests is:";
 
     int missing_fields_len = 0;
     int missing_fields_capacity = 100;
@@ -966,11 +966,49 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     json_object_put(sequence_escaped);
 
     char *response = chat_with_llm(prompt, "instruct", ENRICHMENT_RETRIES, 0.5);
-    printf("## Prompt:\n%s\n\n", prompt);
-    printf("## Response:\n%s\n\n", response);
+
     free(prompt);
 
     return response;
+}
+
+char *read_file_as_hex_string(const char *file_path) {
+    FILE *file = fopen(file_path, "rb"); // 파일을 바이너리 모드로 엽니다
+    if (file == NULL) {
+        printf("An error occurred: Unable to open file\n");
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file); // 파일 크기를 가져옵니다
+    fseek(file, 0, SEEK_SET);
+
+    unsigned char *buffer = (unsigned char *)malloc(file_size);
+    if (buffer == NULL) {
+        printf("An error occurred: Memory allocation failed\n");
+        fclose(file);
+        return NULL;
+    }
+
+    fread(buffer, sizeof(unsigned char), file_size, file); // 파일 내용을 읽습니다
+    fclose(file);
+
+    // 16진수 문자열을 저장할 메모리 할당 (각 바이트당 3 문자: 2자릿수 16진수 + 공백)
+    char *hex_output = (char *)malloc(file_size * 3 + 1);
+    if (hex_output == NULL) {
+        printf("An error occurred: Memory allocation failed\n");
+        free(buffer);
+        return NULL;
+    }
+
+    for (long i = 0; i < file_size; i++) {
+        sprintf(hex_output + i * 3, "%02x ", buffer[i]); // 각 바이트를 16진수로 변환하여 문자열에 추가
+    }
+
+    hex_output[file_size * 3 - 1] = '\0'; // 마지막 공백을 널 문자로 대체
+    free(buffer); // 버퍼 메모리 해제
+
+    return hex_output; // 16진수 문자열 반환
 }
 
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name) {
@@ -1124,6 +1162,11 @@ char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response
 
 char *construct_prompt_for_binary_protocol_message_types(char *protocol_name)
 {
+    /***
+     * For the RTSP protocol, all of client request methods are DESCRIBE, OPTIONS, 
+     * PAUSE, PLAY, SETUP, TEARDOWN, RECORD, SET_PARAMETER, ANNOUNCE, GET_PARAMETER.
+     * In the [Protocol name] protocol, all of client request methods are:
+     */
     char *prompt =  "For the RTSP protocol, all of client request methods are DESCRIBE, OPTIONS, PAUSE, PLAY, SETUP, TEARDOWN, RECORD, SET_PARAMETER, ANNOUNCE, GET_PARAMETER.\\n"
                     "In the %s protocol, all of client request methods are:";
     asprintf(&prompt, prompt, protocol_name);
@@ -1132,7 +1175,7 @@ char *construct_prompt_for_binary_protocol_message_types(char *protocol_name)
                              "{\"role\": \"user\", \"content\": \"%s\"}]";
     asprintf(&formatted_prompt, formatted_prompt, prompt);
 
-    return prompt;
+    return formatted_prompt;
 }
 
 char *construct_response_format_for_binary_protocol_message_types()
@@ -1166,11 +1209,72 @@ char *construct_response_format_for_binary_protocol_message_types()
                             "\"items\": {\"type\": \"string\"}"
                             "}" // client_request_method
                             "}" // properties
-                            "}" // schema
-                            "}" // json_schema
-                            "}"; //
+                            "}," // schema
+                            "\"required\": [\"client_request_method\"],"
+                            "\"additionalProperties\": false"
+                            "}," // json_schema
+                            "\"strict\": true"
+                            "}"; // type
+
+    // printf("====================== response format ======================\n%s\n\n", response_format);
 
     return response_format;
+}
+
+char *construct_prompt_for_binary_protocol_enrich_sequence(char *protocol_name, char *byte_sequence, char *type1, char *type2)
+{
+    /***
+     * In the [Protocol Name] protocol, following is one sequence of client requests: 
+     * [Client request byte message sequence]
+     * Please add the [type1], [type2] client requests in the proper locations,
+     * and the modified sequence of client requests is:
+     */
+    char *prompt =  "In the %s protocol, following is one sequence of client requests:\\n"\
+                    "%s\n" // byte sequence string
+                    "Please add the %s, %s client requests in the proper locations, and the modified sequence of client requests is:";
+    asprintf(&prompt, prompt, protocol_name, byte_sequence, type1, type2);
+
+    char *formatted_prompt = "[{\"role\": \"system\", \"content\": \"You are a helpful assistant\"}, "
+                             "{\"role\": \"user\", \"content\": \"%s\"}]";
+    asprintf(&formatted_prompt, formatted_prompt, prompt);
+
+    return formatted_prompt;
+}
+
+char *construct_response_format_for_binary_protocol_enrich_sequence()
+{
+    /***
+     * {
+     *   "type": "json_schema",
+     *   "json_schema": {
+     *      "name": "client_request_byte_sequence_string",
+     *      "schema": {
+     *          "type": "object",
+     *          "properties": {
+     *              "client_request_byte_sequence_string": { "type": "string" }
+     *          }
+     *      },
+     *      "required": ["client_request_byte_sequence_string"],
+     *      "additionalProperties": false
+     *   },
+     *   "strict": true
+     * }
+     */
+
+    char *response_format = "{\"type\": \"json_schema\","
+                                "\"json_schema\": {"
+                                    "\"name\": \"client_request_byte_sequence_string\","
+                                    "\"schema\": {"
+                                        "\"type\": \"object\","
+                                        "\"properties\": {"
+                                            "\"client_request_byte_sequence_string\": { \"type\": \"string\" }"
+                                        "}" // properties
+                                    "}," // schema
+                                "\"required\": [\"client_request_byte_sequence_string\"],"
+                                "\"additionalProperties\": false"
+                                "}," // json_schema
+                                "\"strict\": true"
+                            "}"; // type
 }
 
 // // For debugging
