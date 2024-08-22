@@ -973,42 +973,46 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
 }
 
 char *read_file_as_hex_string(const char *file_path) {
-    FILE *file = fopen(file_path, "rb"); // 파일을 바이너리 모드로 엽니다
+    FILE *file = fopen(file_path, "rb");
     if (file == NULL) {
-        printf("An error occurred: Unable to open file\n");
+        printf("An error occurred: Could not open file.\n");
         return NULL;
     }
 
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file); // 파일 크기를 가져옵니다
-    fseek(file, 0, SEEK_SET);
-
-    unsigned char *buffer = (unsigned char *)malloc(file_size);
-    if (buffer == NULL) {
-        printf("An error occurred: Memory allocation failed\n");
+    // Allocate an initial buffer
+    size_t buffer_size = 1;  // Start with 1 for the null terminator
+    size_t index = 0;
+    char *hex_output = (char *)malloc(buffer_size);
+    if (hex_output == NULL) {
+        printf("An error occurred: Memory allocation failed.\n");
         fclose(file);
         return NULL;
     }
+    hex_output[0] = '\0';  // Null-terminate the empty string
 
-    fread(buffer, sizeof(unsigned char), file_size, file); // 파일 내용을 읽습니다
+    unsigned char byte;
+    while (fread(&byte, 1, 1, file) == 1) {
+        // Resize buffer to hold the new hex byte and a space
+        buffer_size += 3;  // 2 chars for hex + 1 for space
+        hex_output = (char *)realloc(hex_output, buffer_size);
+        if (hex_output == NULL) {
+            printf("An error occurred: Memory reallocation failed.\n");
+            fclose(file);
+            return NULL;
+        }
+
+        // Append the hex representation to the output string
+        sprintf(hex_output + index, "%02x ", byte);
+        index += 3;
+    }
+
+    // Trim the last space
+    if (index > 0) {
+        hex_output[index - 1] = '\0';
+    }
+
     fclose(file);
-
-    // 16진수 문자열을 저장할 메모리 할당 (각 바이트당 3 문자: 2자릿수 16진수 + 공백)
-    char *hex_output = (char *)malloc(file_size * 3 + 1);
-    if (hex_output == NULL) {
-        printf("An error occurred: Memory allocation failed\n");
-        free(buffer);
-        return NULL;
-    }
-
-    for (long i = 0; i < file_size; i++) {
-        sprintf(hex_output + i * 3, "%02x ", buffer[i]); // 각 바이트를 16진수로 변환하여 문자열에 추가
-    }
-
-    hex_output[file_size * 3 - 1] = '\0'; // 마지막 공백을 널 문자로 대체
-    free(buffer); // 버퍼 메모리 해제
-
-    return hex_output; // 16진수 문자열 반환
+    return hex_output;
 }
 
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name) {
@@ -1253,27 +1257,27 @@ char *construct_response_format_for_binary_protocol_enrich_sequence()
      *          "properties": {
      *              "client_request_byte_sequence_string": { "type": "string" }
      *          }
+     *          "required": ["client_request_byte_sequence_string"],
+     *          "additionalProperties": false
      *      },
-     *      "required": ["client_request_byte_sequence_string"],
-     *      "additionalProperties": false
-     *   },
-     *   "strict": true
+     *      "strict": true
+     *   }
      * }
      */
 
     char *response_format = "{\"type\": \"json_schema\","
-                                "\"json_schema\": {"
-                                    "\"name\": \"client_request_byte_sequence_string\","
-                                    "\"schema\": {"
-                                        "\"type\": \"object\","
-                                        "\"properties\": {"
-                                            "\"client_request_byte_sequence_string\": { \"type\": \"string\" }"
-                                        "}" // properties
-                                    "}," // schema
-                                "\"required\": [\"client_request_byte_sequence_string\"],"
-                                "\"additionalProperties\": false"
-                                "}," // json_schema
-                                "\"strict\": true"
+                            "\"json_schema\": {"
+                            "\"name\": \"client_request_byte_sequence_string\","
+                            "\"schema\": {"
+                            "\"type\": \"object\","
+                            "\"properties\": {"
+                            "\"client_request_byte_sequence_string\": { \"type\": \"string\" }"
+                            "}" // properties
+                            "\"required\": [\"client_request_byte_sequence_string\"],"
+                            "\"additionalProperties\": false"
+                            "}," // schema
+                            "\"strict\": true"
+                            "}" // json_schema
                             "}"; // type
 }
 

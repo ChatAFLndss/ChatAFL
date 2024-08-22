@@ -11122,9 +11122,9 @@ int main(int argc, char **argv)
     //                                               1,
     //                                               0.5);
     // printf("================= Get protocol types =================\n%s\n\n", test);
-    char *byte_sequence = read_file_as_hex_string(argv[3]);
-    char *type1 = "";
-    char *type2 = "";
+    char *byte_sequence = read_file_as_hex_string("../benmchmark/subjects/RTSP/Live555/in-rtsp/rtsp_requests_aac.raw");
+    char *type1 = "PAUSE";
+    char *type2 = "RECORD";
 		char *test2 = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_enrich_sequence(protocol_name, byte_sequence, type1, type2),
                                                   "gpt-4o-mini",
                                                   construct_response_format_for_binary_protocol_enrich_sequence(),
@@ -11134,8 +11134,14 @@ int main(int argc, char **argv)
       free(byte_sequence);
     }
     printf("================= Enrich Sequence =================\n%s\n\n", test2);
+    
+    json_object *jobj = json_tokener_parse(test2);
+    json_object *value = json_object_object_get(jobj, "byte_sequence_string");
+    const char *data = json_object_get_string(value);
+    if (data[0] == '\n') data++;
+    printf("\nVALUE:\n%s\n\n");
 
-    save_byte_sequence_to_file(test2, "./enriched.raw");
+    save_byte_sequence_to_file(data, "./enriched.raw");
   }
 
   // printf("protocol_name: %s\n", protocol_name);
