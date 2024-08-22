@@ -2645,7 +2645,7 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     strcpy(nl_file_path, in_dir);
     strcat(nl_file_path, "/");
     strcat(nl_file_path, nl_file_name);
-    printf("## File path: %s\n", nl_file_path);
+    // printf("## File path: %s\n", nl_file_path);
 
     FILE *nl_file = fopen(nl_file_path, "r");
     if (nl_file == NULL)
@@ -2661,16 +2661,8 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
     char *nl_file_content = malloc(fsize + 1);
     fread(nl_file_content, fsize, 1, nl_file);
     nl_file_content[fsize] = '\0';
-    printf("## File content:\n %s\n", nl_file_content);
+    // printf("## File content:\n %s\n", nl_file_content);
     fclose(nl_file);
-
-    // Read byte sequence from file
-    unsigned char* file_bytes = read_file_bytes(nl_file_path);
-    if (file_bytes != NULL) {
-        printf("File byte string:\n%s\n\n", file_bytes);
-    } else {
-        printf("Failed to read file bytes.\n");
-    }
     free(nl_file_path);
 
     u32 region_count = 0;
@@ -2729,28 +2721,24 @@ void get_seeds_with_messsage_types(const char *in_dir, khash_t(strSet) * message
       khash_t(strSet)* subset = kv_A(message_subsets,i); 
 
       // Try enriching the sequence
-        char *client_request_answer = enrich_sequence(file_bytes, subset);
+        char *client_request_answer = enrich_sequence(nl_file_content, subset);
 
         if (client_request_answer == NULL)
           continue;
 
         // Check whether the client_request_answer is the same as the nl_file_content or if the client_request_answer is empty
-        char *formatted_nl_file_content = format_string(file_bytes);
+        char *formatted_nl_file_content = format_string(nl_file_content);
         char *unescaped_client_requests = unescape_string(client_request_answer);
         char *formatted_unescaped_client_requests = format_string(unescaped_client_requests);
-        
-        printf("## Formatted answer from LLM:\n%s\n\n", formatted_unescaped_client_requests);
-        printf("## Formatted file content:\n%s\n\n", formatted_nl_file_content);
+        // printf("## Formatted answer from LLM:\n %s\n", formatted_unescaped_client_requests);
+        // printf("## Formatted file content:\n %s\n", formatted_nl_file_content);
         if (formatted_unescaped_client_requests == NULL || strcmp(formatted_unescaped_client_requests, formatted_nl_file_content) == 0)
         {
           printf("## Skip the same seed\n");
-          // free(file_bytes);
           continue;
         }
-        free(file_bytes);
 
-        char *byte_file_content = hex_string_to_bytes(unescaped_client_requests);
-        unescaped_client_requests = format_request_message(byte_file_content);
+        unescaped_client_requests = format_request_message(unescaped_client_requests);
 
         // Create the file in the same directory with the name enriched_state_<file_name>
         char *enriched_file_name = malloc(strlen(nl_file_name) + 10 + 20);
