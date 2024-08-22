@@ -1234,7 +1234,7 @@ char *construct_prompt_for_binary_protocol_enrich_sequence(char *protocol_name, 
      * and the modified sequence of client requests is:
      */
     char *prompt =  "In the %s protocol, following is one sequence of client requests:\\n"\
-                    "%s\n" // byte sequence string
+                    "%s\\n" // byte sequence string
                     "Please add the %s, %s client requests in the proper locations, and the modified sequence of client requests is:";
     asprintf(&prompt, prompt, protocol_name, byte_sequence, type1, type2);
 
