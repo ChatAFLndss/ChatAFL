@@ -1126,8 +1126,11 @@ char *construct_prompt_for_binary_protocol_message_types(char *protocol_name)
 {
     char *prompt =  "For the RTSP protocol, all of client request methods are DESCRIBE, OPTIONS, PAUSE, PLAY, SETUP, TEARDOWN, RECORD, SET_PARAMETER, ANNOUNCE, GET_PARAMETER.\\n"
                     "In the %s protocol, all of client request methods are:";
-
     asprintf(&prompt, prompt, protocol_name);
+
+    char *formatted_prompt = "[{\"role\": \"system\", \"content\": \"You are a helpful assistant\"}, "
+                             "{\"role\": \"user\", \"content\": \"%s\"}]";
+    asprintf(&formatted_prompt, formatted_prompt, prompt);
 
     return prompt;
 }
@@ -1165,7 +1168,7 @@ char *construct_response_format_for_binary_protocol_message_types()
                             "}" // properties
                             "}" // schema
                             "}" // json_schema
-                            "}"; // type
+                            "}"; //
 
     return response_format;
 }
