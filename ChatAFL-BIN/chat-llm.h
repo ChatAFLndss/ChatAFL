@@ -84,6 +84,7 @@ char *format_request_message(char *message);
 char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature);
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name);
 char *construct_prompt_for_binary_protocol_message_types(char *protocol_name);
+char *construct_response_format_for_binary_protocol_message_types();
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);

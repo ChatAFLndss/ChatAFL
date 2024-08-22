@@ -1124,7 +1124,50 @@ char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response
 
 char *construct_prompt_for_binary_protocol_message_types(char *protocol_name)
 {
-	// construct_prompt_for_binary_protocol_message_types(char *protocol_name)
+    char *prompt =  "For the RTSP protocol, all of client request methods are DESCRIBE, OPTIONS, PAUSE, PLAY, SETUP, TEARDOWN, RECORD, SET_PARAMETER, ANNOUNCE, GET_PARAMETER.\\n"
+                    "In the %s protocol, all of client request methods are:";
+
+    asprintf(&prompt, prompt, protocol_name);
+
+    return prompt;
+}
+
+char *construct_response_format_for_binary_protocol_message_types()
+{
+    /***
+     * {
+     *   "type": "json_schema",
+     *   "json_schema": {
+     *      "name": "client_request_method_list",
+     *      "schema": {
+     *          "type": "object",
+     *          "properties": {
+     *              "client_request_method": {
+     *                  "type": "array",
+     *                  "items": {"type": "string"}
+     *              }
+     *          }
+     *      }
+     *   }
+     * }
+     */
+
+    char *response_format = "{\"type\": \"json_schema\","
+                            "\"json_schema\": {"
+                            "\"name\": \"client_request_method_list\","
+                            "\"schema\": {"
+                            "\"type\": \"object\","
+                            "\"properties\": {"
+                            "\"client_request_method\": {"
+                            "\"type\": \"array\","
+                            "\"items\": {\"type\": \"string\"}"
+                            "}" // client_request_method
+                            "}" // properties
+                            "}" // schema
+                            "}" // json_schema
+                            "}"; // type
+
+    return response_format;
 }
 
 // // For debugging

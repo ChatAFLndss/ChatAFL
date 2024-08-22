@@ -11128,7 +11128,12 @@ int main(int argc, char **argv)
     // setup_llm_grammars();
     // enrich_testcases();
 
-		char *test = extract_protocol_methods();
+		char *test = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_message_types(protocol_name),
+                                                  "gpt-4o-mini",
+                                                  construct_response_format_for_binary_protocol_message_types(),
+                                                  1,
+                                                  0.5);
+    printf("================= Get protocol types =================\n%s\n\n", test);
   }
 
   // printf("protocol_name: %s\n", protocol_name);
