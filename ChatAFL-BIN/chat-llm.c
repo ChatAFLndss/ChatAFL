@@ -973,92 +973,158 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     return response;
 }
 
-char* bytes_to_hex_string(const unsigned char* bytes, size_t byte_length) {
-    char* hex_string = (char*)malloc((byte_length * 2 + 1) * sizeof(char));
-    if (hex_string == NULL) {
-        return NULL;
+void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name) {
+    // 공백을 기준으로 바이트 시퀀스를 분리하기 위한 버퍼
+    char byte_str[3];
+    byte_str[2] = '\0'; // null-terminate the string
+    size_t length = strlen(byte_sequence);
+
+    // 저장할 바이트의 수 계산
+    size_t num_bytes = (length + 1) / 3; // "XX " 패턴으로 되어 있으므로, 3바이트마다 1바이트 데이터가 생성됨
+
+    // 바이트 배열을 할당
+    unsigned char *byte_values = (unsigned char*)malloc(num_bytes);
+    if (byte_values == NULL) {
+        fprintf(stderr, "메모리 할당 실패\n");
+        return;
     }
 
-    for (size_t i = 0; i < byte_length; ++i) {
-        sprintf(hex_string + i * 2, "%02x", bytes[i]);
+    // 바이트 시퀀스를 실제 바이트 값으로 변환
+    size_t byte_index = 0;
+    for (size_t i = 0; i < length; i += 3) {
+        // 두 개의 16진수 문자를 추출
+        byte_str[0] = byte_sequence[i];
+        byte_str[1] = byte_sequence[i + 1];
+
+        // 16진수 문자열을 실제 바이트 값으로 변환
+        byte_values[byte_index++] = (unsigned char)strtol(byte_str, NULL, 16);
     }
 
-    hex_string[byte_length * 2] = '\0';
+    // 바이너리 파일로 저장
+    FILE *binary_file = fopen(file_name, "wb");
+    if (binary_file == NULL) {
+        fprintf(stderr, "파일 열기 실패: %s\n", file_name);
+        free(byte_values);
+        return;
+    }
+    fwrite(byte_values, 1, num_bytes, binary_file);
+    fclose(binary_file);
 
-    return hex_string;
+    printf("%s 파일로 저장되었습니다.\n", file_name);
+
+    // 메모리 해제
+    free(byte_values);
 }
 
-char* hex_string_to_bytes(const char* hex_string) {
-    size_t hex_len = strlen(hex_string);
+char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature) 
+{
+    CURL *curl;
+    CURLcode res = CURLE_OK;
+    char *answer = NULL;
+    char *url = NULL;
+    if (strcmp(model, "instruct") == 0)
+    {
+        url = "https://api.openai.com/v1/completions";
+    }
+    else
+    {
+        url = "https://api.openai.com/v1/chat/completions";
+    }
+    char *auth_header = "Authorization: Bearer " OPENAI_TOKEN;
+    char *content_header = "Content-Type: application/json";
+    char *accept_header = "Accept: application/json";
+    char *data = NULL;
+    if (strcmp(model, "instruct") == 0)
+    {
+        asprintf(&data, "{\"model\": \"gpt-3.5-turbo-instruct\", \"prompt\": \"%s\", \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_TOKENS, temperature);
+    }
+    else
+    {
+        asprintf(&data, "{\"model\": \"gpt-4o-mini\",\"messages\": %s, \"max_tokens\": %d, \"response_format\": %s, \"temperature\": %f}", prompt, MAX_TOKENS, response_format, temperature);
+    }
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    do
+    {
+        struct MemoryStruct chunk;
 
-    if (hex_len % 2 != 0) {
-        return NULL;
+        chunk.memory = malloc(1); /* will be grown as needed by the realloc above */
+        chunk.size = 0;           /* no data at this point */
+
+        curl = curl_easy_init();
+        if (curl)
+        {
+            struct curl_slist *headers = NULL;
+            headers = curl_slist_append(headers, auth_header);
+            headers = curl_slist_append(headers, content_header);
+            headers = curl_slist_append(headers, accept_header);
+
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, chat_with_llm_helper);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
+            res = curl_easy_perform(curl);
+
+            if (res == CURLE_OK)
+            {
+                json_object *jobj = json_tokener_parse(chunk.memory);
+
+                // Check if the "choices" key exists
+                if (json_object_object_get_ex(jobj, "choices", NULL))
+                {
+                    json_object *choices = json_object_object_get(jobj, "choices");
+                    json_object *first_choice = json_object_array_get_idx(choices, 0);
+                    const char *data;
+
+                    // The answer begins with a newline character, so we remove it
+                    if (strcmp(model, "instruct") == 0)
+                    {
+                        json_object *jobj4 = json_object_object_get(first_choice, "text");
+                        data = json_object_get_string(jobj4);
+                    }
+                    else
+                    {
+                        json_object *jobj4 = json_object_object_get(first_choice, "message");
+                        json_object *jobj5 = json_object_object_get(jobj4, "content");
+                        data = json_object_get_string(jobj5);
+                    }
+                    if (data[0] == '\n')
+                        data++;
+                    answer = strdup(data);
+                }
+                else
+                {
+                    printf("Error response is: %s\n", chunk.memory);
+                    sleep(2); // Sleep for a small amount of time to ensure that the service can recover
+                }
+                json_object_put(jobj);
+            }
+            else
+            {
+                printf("Error: %s\n", curl_easy_strerror(res));
+            }
+
+            curl_slist_free_all(headers);
+            curl_easy_cleanup(curl);
+        }
+
+        free(chunk.memory);
+    } while ((res != CURLE_OK || answer == NULL) && (--tries > 0));
+
+    if (data != NULL)
+    {
+        free(data);
     }
 
-    size_t byte_length = hex_len / 2;
-    unsigned char* bytes = (unsigned char*)malloc(byte_length * sizeof(unsigned char));
-    if (bytes == NULL) {
-        return NULL;
-    }
+    curl_global_cleanup();
+    return answer;
 
-    for (size_t i = 0; i < byte_length; ++i) {
-        sscanf(hex_string + 2 * i, "%2hhx", &bytes[i]);
-    }
-
-    return bytes;
 }
 
-// 파일의 바이트 시퀀스를 반환하는 함수
-unsigned char* read_file_bytes(const char* file_path) {
-    FILE* file = fopen(file_path, "rb");  // 바이너리 모드로 파일 열기
-    if (file == NULL) {
-        perror("Failed to open file");
-        return NULL;
-    }
-
-    // 파일 크기 계산
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    if (file_size < 0) {
-        perror("Failed to determine file size");
-        fclose(file);
-        return NULL;
-    }
-
-    // 16진수 문자열 크기: 각 바이트는 2자리 16진수 + 1(널 문자)로 계산
-    char* hex_string = (char*)malloc((file_size * 2 + 1) * sizeof(char));
-    if (hex_string == NULL) {
-        perror("Failed to allocate memory");
-        fclose(file);
-        return NULL;
-    }
-
-    unsigned char* buffer = (unsigned char*)malloc(file_size * sizeof(unsigned char));
-    if (buffer == NULL) {
-        perror("Failed to allocate memory for buffer");
-        free(hex_string);
-        fclose(file);
-        return NULL;
-    }
-
-    // 파일 내용 읽기
-    fread(buffer, sizeof(unsigned char), file_size, file);
-
-    // 바이트 데이터를 16진수 문자열로 변환
-    for (long i = 0; i < file_size; ++i) {
-        sprintf(hex_string + i * 2, "%02x", buffer[i]);
-    }
-
-    // 널 종료 문자 추가
-    hex_string[file_size * 2] = '\0';
-
-    // 메모리 정리
-    free(buffer);
-    fclose(file);
-
-    return hex_string;
+char *construct_prompt_for_binary_protocol_message_types(char *protocol_name)
+{
+	// construct_prompt_for_binary_protocol_message_types(char *protocol_name)
 }
 
 // // For debugging

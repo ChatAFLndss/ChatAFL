@@ -11125,8 +11125,10 @@ int main(int argc, char **argv)
     protocol_patterns = kl_init(rang);
     message_types_set = kh_init(strSet);
 
-    setup_llm_grammars();
-    enrich_testcases();
+    // setup_llm_grammars();
+    // enrich_testcases();
+
+		char *test = extract_protocol_methods();
   }
 
   // printf("protocol_name: %s\n", protocol_name);
