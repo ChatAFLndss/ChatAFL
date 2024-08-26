@@ -2787,8 +2787,7 @@ static void enrich_testcases(void)
 
 void run_enrich_binary_sequence(const char *in_dir, const char *model, int combination_length) 
 {
-  char *script = NULL;
-  char *template = "python3 enrich_binary_sequence.py -i %s -a %s -m %s -p %s -c %s";
+  char *script = "python3 enrich_binary_sequence.py -i %s -a %s -m %s -p %s -c %d";
   asprintf(&script, template, in_dir, OPENAI_TOKEN, model, protocol_name, combination_length);
 
   system(script);

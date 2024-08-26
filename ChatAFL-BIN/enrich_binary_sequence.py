@@ -130,7 +130,7 @@ def main():
     inputs = ARGS.input_directory
 
     types:list = get_protocol_types(protocol=protocol, model=model, temperature=0.5)
-    combination_length = ARGS.combination_length
+    combination_length = int(ARGS.combination_length)
     combination = list(itertools.combinations(types, combination_length))
     print(combination)
 
