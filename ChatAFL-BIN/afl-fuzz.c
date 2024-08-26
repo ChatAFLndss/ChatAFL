@@ -430,6 +430,8 @@ char *protocol_name;
 // Reward fields - To be used
 u32 reward_random;
 u32 reward_grammar;
+// Flag to check binary/text based protocol
+u8 is_binary;
 
 void setup_llm_grammars()
 {
@@ -2781,6 +2783,24 @@ static void enrich_testcases(void)
 
   // Get seeds to states and save them to the in_dir
   get_seeds_with_messsage_types(in_dir, message_types_set);
+}
+
+void run_enrich_binary_sequence(const char *in_dir, const char *model, int combination_length) 
+{
+  char *script = NULL;
+  char *template = "python3 enrich_binary_sequence.py -i %s -a %s -m %s -p %s -c %s";
+  asprintf(&script, template, in_dir, OPENAI_TOKEN, model, protocol_name, combination_length);
+
+  system(script);
+}
+
+/* Enrich the testcases before startup */
+static void enrich_binary_testcases(void)
+{
+  ACTF("Enriching binary test cases from LLM...");
+
+  // Get seeds to states and save them to the in_dir
+  run_enrich_binary_sequence(in_dir, "gpt-4o-mini", MAX_ENRICHMENT_MESSAGE_TYPES);
 }
 
 /* Read all testcases from the input directory, then queue them for testing.
@@ -10471,56 +10491,67 @@ static int check_ep_capability(cap_value_t cap, const char *filename)
 //       {
 //         extract_requests = &extract_requests_rtsp;
 //         extract_response_codes = &extract_response_codes_rtsp;
+//         is_binary = 0;
 //       }
 //       else if (!strcmp(optarg, "FTP"))
 //       {
 //         extract_requests = &extract_requests_ftp;
 //         extract_response_codes = &extract_response_codes_ftp;
+//         is_binary = 0;
 //       }
 //       else if (!strcmp(optarg, "DTLS12"))
 //       {
 //         extract_requests = &extract_requests_dtls12;
 //         extract_response_codes = &extract_response_codes_dtls12;
+//         is_binary = 1;
 //       }
 //       else if (!strcmp(optarg, "DNS"))
 //       {
 //         extract_requests = &extract_requests_dns;
 //         extract_response_codes = &extract_response_codes_dns;
+//         is_binary = 1;
 //       }
 //       else if (!strcmp(optarg, "DICOM"))
 //       {
 //         extract_requests = &extract_requests_dicom;
 //         extract_response_codes = &extract_response_codes_dicom;
+//         is_binary = 1;
 //       }
 //       else if (!strcmp(optarg, "SMTP"))
 //       {
 //         extract_requests = &extract_requests_smtp;
 //         extract_response_codes = &extract_response_codes_smtp;
+//         is_binary = 0;
 //       }
 //       else if (!strcmp(optarg, "SSH"))
 //       {
 //         extract_requests = &extract_requests_ssh;
 //         extract_response_codes = &extract_response_codes_ssh;
+//         is_binary = 1;
 //       }
 //       else if (!strcmp(optarg, "TLS"))
 //       {
 //         extract_requests = &extract_requests_tls;
 //         extract_response_codes = &extract_response_codes_tls;
+//         is_binary = 1;
 //       }
 //       else if (!strcmp(optarg, "SIP"))
 //       {
 //         extract_requests = &extract_requests_sip;
 //         extract_response_codes = &extract_response_codes_sip;
+//         is_binary = 0;
 //       }
 //       else if (!strcmp(optarg, "HTTP"))
 //       {
 //         extract_requests = &extract_requests_http;
 //         extract_response_codes = &extract_response_codes_http;
+//         is_binary = 0;
 //       }
 //       else if (!strcmp(optarg, "IPP"))
 //       {
 //         extract_requests = &extract_requests_ipp;
 //         extract_response_codes = &extract_response_codes_ipp;
+//         is_binary = 0;
 //       }
 //       else
 //       {
@@ -10683,9 +10714,15 @@ static int check_ep_capability(cap_value_t cap, const char *filename)
 //     protocol_patterns = kl_init(rang);
 //     message_types_set = kh_init(strSet);
 
-//     setup_llm_grammars();
-//     enrich_testcases();
+//     if (is_binary) {
+//       enrich_binary_testcases();
+//     }
+//     else {
+//       setup_llm_grammars();
+//       enrich_testcases();
+//     }
 //   }
+
 //   read_testcases();
 //   load_auto();
 
@@ -10941,167 +10978,178 @@ int main(int argc, char **argv)
       {
         extract_requests = &extract_requests_rtsp;
         extract_response_codes = &extract_response_codes_rtsp;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-5";
+        is_binary = 0;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-5";
 
       }
       else if (!strcmp(argv[1], "FTP"))
       {
         extract_requests = &extract_requests_ftp;
         extract_response_codes = &extract_response_codes_ftp;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-5";
+        is_binary = 0;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-5";
       }
       else if (!strcmp(argv[1], "DTLS12"))
       {
         extract_requests = &extract_requests_dtls12;
         extract_response_codes = &extract_response_codes_dtls12;
+        is_binary = 1;
         if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-5";
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-5";
           }
       else if (!strcmp(argv[1], "DNS"))
       {
         extract_requests = &extract_requests_dns;
         extract_response_codes = &extract_response_codes_dns;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-5";
+        is_binary = 1;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-5";
       }
       else if (!strcmp(argv[1], "DICOM"))
       {
         extract_requests = &extract_requests_dicom;
         extract_response_codes = &extract_response_codes_dicom;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-5";
+        is_binary = 1;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-5";
       }
       else if (!strcmp(argv[1], "SMTP"))
       {
         extract_requests = &extract_requests_smtp;
         extract_response_codes = &extract_response_codes_smtp;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-5";
+        is_binary = 0;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-5";
       }
       else if (!strcmp(argv[1], "SSH"))
       {
         extract_requests = &extract_requests_ssh;
         extract_response_codes = &extract_response_codes_ssh;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-5";
+        is_binary = 1;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-5";
       }
       else if (!strcmp(argv[1], "TLS"))
       {
         extract_requests = &extract_requests_tls;
         extract_response_codes = &extract_response_codes_tls;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-5";
+        is_binary = 1;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-5";
       }
       else if (!strcmp(argv[1], "SIP"))
       {
         extract_requests = &extract_requests_sip;
         extract_response_codes = &extract_response_codes_sip;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-5";
+        is_binary = 0;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-5";
       }
       else if (!strcmp(argv[1], "HTTP"))
       {
         extract_requests = &extract_requests_http;
         extract_response_codes = &extract_response_codes_http;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-5";
+        is_binary = 0;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-5";
       }
       else if (!strcmp(argv[1], "IPP"))
       {
         extract_requests = &extract_requests_ipp;
         extract_response_codes = &extract_response_codes_ipp;
-                if (argv[2][0] == '1')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-1";
-                else if (argv[2][0] == '2')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-2";
-                else if (argv[2][0] == '3')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-3";
-                else if (argv[2][0] == '4')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-4";
-                else if (argv[2][0] == '5')
-                        out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-5";
+        is_binary = 0;
+        if (argv[2][0] == '1')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-1";
+        else if (argv[2][0] == '2')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-2";
+        else if (argv[2][0] == '3')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-3";
+        else if (argv[2][0] == '4')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-4";
+        else if (argv[2][0] == '5')
+                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-5";
       }
       else
       {
@@ -11113,35 +11161,13 @@ int main(int argc, char **argv)
     protocol_patterns = kl_init(rang);
     message_types_set = kh_init(strSet);
 
-    // setup_llm_grammars();
-    // enrich_testcases();
-
-		// char *test = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_message_types(protocol_name),
-    //                                               "gpt-4o-mini",
-    //                                               construct_response_format_for_binary_protocol_message_types(),
-    //                                               1,
-    //                                               0.5);
-    // printf("================= Get protocol types =================\n%s\n\n", test);
-    char *byte_sequence = read_file_as_hex_string("../benmchmark/subjects/RTSP/Live555/in-rtsp/rtsp_requests_aac.raw");
-    char *type1 = "PAUSE";
-    char *type2 = "RECORD";
-		char *test2 = chat_with_llm_structured_outputs(construct_prompt_for_binary_protocol_enrich_sequence(protocol_name, byte_sequence, type1, type2),
-                                                  "gpt-4o-mini",
-                                                  construct_response_format_for_binary_protocol_enrich_sequence(),
-                                                  1,
-                                                  0.5);
-    if (byte_sequence != NULL) {
-      free(byte_sequence);
+    if (is_binary) {
+      enrich_binary_testcases();
     }
-    printf("================= Enrich Sequence =================\n%s\n\n", test2);
-    
-    json_object *jobj = json_tokener_parse(test2);
-    json_object *value = json_object_object_get(jobj, "byte_sequence_string");
-    const char *data = json_object_get_string(value);
-    if (data[0] == '\n') data++;
-    printf("\nVALUE:\n%s\n\n");
-
-    save_byte_sequence_to_file(data, "./enriched.raw");
+    else {
+      setup_llm_grammars();
+      enrich_testcases();
+    }
   }
 
   // printf("protocol_name: %s\n", protocol_name);
