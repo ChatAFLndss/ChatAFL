@@ -103,6 +103,7 @@ def get_protocol_types(protocol: str, model: str, temperature: float):
             {"role": "user", "content": prompt}
         ],
         response_format=ClientRequestMethods,
+        timeout=15
     )
 
     response = completion.choices[0].message.parsed
