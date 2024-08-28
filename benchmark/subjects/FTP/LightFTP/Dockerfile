@@ -70,7 +70,7 @@ RUN cd chatafl-seed && \
     cd llvm_mode && make $MAKE_OPT
 
 COPY --chown=ubuntu:ubuntu chatafl-bin chatafl-bin
-RUN cd chatafl-seed && \
+RUN cd chatafl-bin && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
     
