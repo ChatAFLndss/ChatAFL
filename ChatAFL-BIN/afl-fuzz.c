@@ -10214,499 +10214,947 @@ static int check_ep_capability(cap_value_t cap, const char *filename)
 
 /* Main entry point */
 
+int main(int argc, char **argv)
+{
+
+  s32 opt;
+  u64 prev_queued = 0;
+  u32 sync_interval_cnt = 0, seek_to;
+  u8 *extras_dir = 0;
+  u8 mem_limit_given = 0;
+  u8 exit_1 = !!getenv("AFL_BENCH_JUST_ONE");
+  // char** use_argv;
+
+  struct timeval tv;
+  struct timezone tz;
+
+  SAYF(cCYA "afl-fuzz " cBRI VERSION cRST " by <lcamtuf@google.com>\n");
+
+  doc_path = access(DOC_PATH, F_OK) ? "docs" : DOC_PATH;
+
+  gettimeofday(&tv, &tz);
+  srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
+
+  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:")) > 0)
+
+    switch (opt)
+    {
+
+    case 'i': /* input dir */
+
+      if (in_dir)
+        FATAL("Multiple -i options not supported");
+      in_dir = optarg;
+
+      if (!strcmp(in_dir, "-"))
+        in_place_resume = 1;
+
+      break;
+
+    case 'o': /* output dir */
+
+      if (out_dir)
+        FATAL("Multiple -o options not supported");
+      out_dir = optarg;
+      break;
+
+    case 'M':
+    { /* master sync ID */
+
+      u8 *c;
+
+      if (sync_id)
+        FATAL("Multiple -S or -M options not supported");
+      sync_id = ck_strdup(optarg);
+
+      if ((c = strchr(sync_id, ':')))
+      {
+
+        *c = 0;
+
+        if (sscanf(c + 1, "%u/%u", &master_id, &master_max) != 2 ||
+            !master_id || !master_max || master_id > master_max ||
+            master_max > 1000000)
+          FATAL("Bogus master ID passed to -M");
+      }
+
+      force_deterministic = 1;
+    }
+
+    break;
+
+    case 'S':
+
+      if (sync_id)
+        FATAL("Multiple -S or -M options not supported");
+      sync_id = ck_strdup(optarg);
+      break;
+
+    case 'f': /* target file */
+
+      if (out_file)
+        FATAL("Multiple -f options not supported");
+      out_file = optarg;
+      break;
+
+    case 'x': /* dictionary */
+
+      if (extras_dir)
+        FATAL("Multiple -x options not supported");
+      extras_dir = optarg;
+      break;
+
+    case 't':
+    { /* timeout */
+
+      u8 suffix = 0;
+
+      if (timeout_given)
+        FATAL("Multiple -t options not supported");
+
+      if (sscanf(optarg, "%u%c", &exec_tmout, &suffix) < 1 ||
+          optarg[0] == '-')
+        FATAL("Bad syntax used for -t");
+
+      if (exec_tmout < 5)
+        FATAL("Dangerously low value of -t");
+
+      if (suffix == '+')
+        timeout_given = 2;
+      else
+        timeout_given = 1;
+
+      break;
+    }
+
+    case 'm':
+    { /* mem limit */
+
+      u8 suffix = 'M';
+
+      if (mem_limit_given)
+        FATAL("Multiple -m options not supported");
+      mem_limit_given = 1;
+
+      if (!strcmp(optarg, "none"))
+      {
+
+        mem_limit = 0;
+        break;
+      }
+
+      if (sscanf(optarg, "%llu%c", &mem_limit, &suffix) < 1 ||
+          optarg[0] == '-')
+        FATAL("Bad syntax used for -m");
+
+      switch (suffix)
+      {
+
+      case 'T':
+        mem_limit *= 1024 * 1024;
+        break;
+      case 'G':
+        mem_limit *= 1024;
+        break;
+      case 'k':
+        mem_limit /= 1024;
+        break;
+      case 'M':
+        break;
+
+      default:
+        FATAL("Unsupported suffix or bad syntax for -m");
+      }
+
+      if (mem_limit < 5)
+        FATAL("Dangerously low value of -m");
+
+      if (sizeof(rlim_t) == 4 && mem_limit > 2000)
+        FATAL("Value of -m out of range on 32-bit systems");
+    }
+
+    break;
+
+    case 'd': /* skip deterministic */
+
+      if (skip_deterministic)
+        FATAL("Multiple -d options not supported");
+      skip_deterministic = 1;
+      use_splicing = 1;
+      break;
+
+    case 'B': /* load bitmap */
+
+      /* This is a secret undocumented option! It is useful if you find
+         an interesting test case during a normal fuzzing process, and want
+         to mutate it without rediscovering any of the test cases already
+         found during an earlier run.
+
+         To use this mode, you need to point -B to the fuzz_bitmap produced
+         by an earlier run for the exact same binary... and that's it.
+
+         I only used this once or twice to get variants of a particular
+         file, so I'm not making this an official setting. */
+
+      if (in_bitmap)
+        FATAL("Multiple -B options not supported");
+
+      in_bitmap = optarg;
+      read_bitmap(in_bitmap);
+      break;
+
+    case 'C': /* crash mode */
+
+      if (crash_mode)
+        FATAL("Multiple -C options not supported");
+      crash_mode = FAULT_CRASH;
+      break;
+
+    case 'n': /* dumb mode */
+
+      if (dumb_mode)
+        FATAL("Multiple -n options not supported");
+      if (getenv("AFL_DUMB_FORKSRV"))
+        dumb_mode = 2;
+      else
+        dumb_mode = 1;
+
+      break;
+
+    case 'T': /* banner */
+
+      if (use_banner)
+        FATAL("Multiple -T options not supported");
+      use_banner = optarg;
+      break;
+
+    case 'Q': /* QEMU mode */
+
+      if (qemu_mode)
+        FATAL("Multiple -Q options not supported");
+      qemu_mode = 1;
+
+      if (!mem_limit_given)
+        mem_limit = MEM_LIMIT_QEMU;
+
+      break;
+
+    case 'N': /* Network configuration */
+      if (use_net)
+        FATAL("Multiple -N options not supported");
+      if (parse_net_config(optarg, &net_protocol, &net_ip, &net_port))
+        FATAL("Bad syntax used for -N. Check the network setting. [tcp/udp]://127.0.0.1/port");
+
+      use_net = 1;
+      break;
+
+    case 'D': /* waiting time for the server initialization */
+      if (server_wait)
+        FATAL("Multiple -D options not supported");
+
+      if (sscanf(optarg, "%u", &server_wait_usecs) < 1 || optarg[0] == '-')
+        FATAL("Bad syntax used for -D");
+      server_wait = 1;
+      break;
+
+    case 'W': /* polling timeout determining maximum amount of time waited before concluding that no responses are forthcoming*/
+      if (socket_timeout)
+        FATAL("Multiple -W options not supported");
+
+      if (sscanf(optarg, "%u", &poll_wait_msecs) < 1 || optarg[0] == '-')
+        FATAL("Bad syntax used for -W");
+      poll_wait = 1;
+      break;
+
+    case 'w': /* receive/send socket timeout determining time waited for each response */
+      if (socket_timeout)
+        FATAL("Multiple -w options not supported");
+
+      if (sscanf(optarg, "%u", &socket_timeout_usecs) < 1 || optarg[0] == '-')
+        FATAL("Bad syntax used for -w");
+      socket_timeout = 1;
+      break;
+
+    case 'e': /* network namespace name */
+      if (netns_name)
+        FATAL("Multiple -e options not supported");
+
+      netns_name = optarg;
+      break;
+
+    case 'P': /* protocol to be tested */
+      if (protocol_selected)
+        FATAL("Multiple -P options not supported");
+
+      if (!strcmp(optarg, "RTSP"))
+      {
+        extract_requests = &extract_requests_rtsp;
+        extract_response_codes = &extract_response_codes_rtsp;
+        is_binary = 0;
+      }
+      else if (!strcmp(optarg, "FTP"))
+      {
+        extract_requests = &extract_requests_ftp;
+        extract_response_codes = &extract_response_codes_ftp;
+        is_binary = 0;
+      }
+      else if (!strcmp(optarg, "DTLS12"))
+      {
+        extract_requests = &extract_requests_dtls12;
+        extract_response_codes = &extract_response_codes_dtls12;
+        is_binary = 1;
+      }
+      else if (!strcmp(optarg, "DNS"))
+      {
+        extract_requests = &extract_requests_dns;
+        extract_response_codes = &extract_response_codes_dns;
+        is_binary = 1;
+      }
+      else if (!strcmp(optarg, "DICOM"))
+      {
+        extract_requests = &extract_requests_dicom;
+        extract_response_codes = &extract_response_codes_dicom;
+        is_binary = 1;
+      }
+      else if (!strcmp(optarg, "SMTP"))
+      {
+        extract_requests = &extract_requests_smtp;
+        extract_response_codes = &extract_response_codes_smtp;
+        is_binary = 0;
+      }
+      else if (!strcmp(optarg, "SSH"))
+      {
+        extract_requests = &extract_requests_ssh;
+        extract_response_codes = &extract_response_codes_ssh;
+        is_binary = 1;
+      }
+      else if (!strcmp(optarg, "TLS"))
+      {
+        extract_requests = &extract_requests_tls;
+        extract_response_codes = &extract_response_codes_tls;
+        is_binary = 1;
+      }
+      else if (!strcmp(optarg, "SIP"))
+      {
+        extract_requests = &extract_requests_sip;
+        extract_response_codes = &extract_response_codes_sip;
+        is_binary = 0;
+      }
+      else if (!strcmp(optarg, "HTTP"))
+      {
+        extract_requests = &extract_requests_http;
+        extract_response_codes = &extract_response_codes_http;
+        is_binary = 0;
+      }
+      else if (!strcmp(optarg, "IPP"))
+      {
+        extract_requests = &extract_requests_ipp;
+        extract_response_codes = &extract_response_codes_ipp;
+        is_binary = 0;
+      }
+      else
+      {
+        FATAL("%s protocol is not supported yet!", optarg);
+      }
+      protocol_name = ck_strdup(optarg);
+      protocol_selected = 1;
+
+      break;
+
+    case 'K':
+      if (terminate_child)
+        FATAL("Multiple -K options not supported");
+      terminate_child = 1;
+      break;
+
+    case 'E':
+      if (state_aware_mode)
+        FATAL("Multiple -E options not supported");
+      state_aware_mode = 1;
+      break;
+
+    case 'q': /* state selection option */
+      if (sscanf(optarg, "%hhu", &state_selection_algo) < 1 || optarg[0] == '-')
+        FATAL("Bad syntax used for -q");
+      break;
+
+    case 's': /* seed selection option */
+      if (sscanf(optarg, "%hhu", &seed_selection_algo) < 1 || optarg[0] == '-')
+        FATAL("Bad syntax used for -s");
+      break;
+
+    case 'R':
+      if (region_level_mutation)
+        FATAL("Multiple -R options not supported");
+      region_level_mutation = 1;
+      break;
+
+    case 'F':
+      if (false_negative_reduction)
+        FATAL("Multiple -F options not supported");
+      false_negative_reduction = 1;
+      break;
+
+    case 'c': /* cleanup script */
+
+      if (cleanup_script)
+        FATAL("Multiple -c options not supported");
+      cleanup_script = optarg;
+      break;
+
+    case 'l': /* local port to connect from */
+      // This option is only used for targets that send responses to a specific port number
+      // The Kamailio SIP server is an example
+
+      if (local_port)
+        FATAL("Multiple -l options not supported");
+      local_port = atoi(optarg);
+      if (local_port < 1024 || local_port > 65535)
+        FATAL("Invalid source port number");
+      break;
+
+    default:
+
+      usage(argv[0]);
+    }
+
+  if (optind == argc || !in_dir || !out_dir)
+    usage(argv[0]);
+
+  // AFLNet - Check for required arguments
+  if (!use_net)
+    FATAL("Please specify network information of the server under test (e.g., tcp://127.0.0.1/8554)");
+
+  if (!protocol_selected)
+    FATAL("Please specify the protocol to be tested using the -P option");
+
+  if (netns_name)
+  {
+    if (check_ep_capability(CAP_SYS_ADMIN, argv[0]) != 0)
+      FATAL("Could not run the server under test in a \"%s\" network namespace "
+            "without CAP_SYS_ADMIN capability.\n You can set it by invoking "
+            "afl-fuzz with sudo or by \"$ setcap cap_sys_admin+ep /path/to/afl-fuzz\".",
+            netns_name);
+  }
+
+  setup_signal_handlers();
+  check_asan_opts();
+
+  if (sync_id)
+    fix_up_sync();
+
+  if (!strcmp(in_dir, out_dir))
+    FATAL("Input and output directories can't be the same");
+
+  if (dumb_mode)
+  {
+
+    if (crash_mode)
+      FATAL("-C and -n are mutually exclusive");
+    if (qemu_mode)
+      FATAL("-Q and -n are mutually exclusive");
+  }
+
+  if (getenv("AFL_NO_FORKSRV"))
+    no_forkserver = 1;
+  if (getenv("AFL_NO_CPU_RED"))
+    no_cpu_meter_red = 1;
+  if (getenv("AFL_NO_ARITH"))
+    no_arith = 1;
+  if (getenv("AFL_SHUFFLE_QUEUE"))
+    shuffle_queue = 1;
+  if (getenv("AFL_FAST_CAL"))
+    fast_cal = 1;
+
+  if (getenv("AFL_HANG_TMOUT"))
+  {
+    hang_tmout = atoi(getenv("AFL_HANG_TMOUT"));
+    if (!hang_tmout)
+      FATAL("Invalid value of AFL_HANG_TMOUT");
+  }
+
+  if (dumb_mode == 2 && no_forkserver)
+    FATAL("AFL_DUMB_FORKSRV and AFL_NO_FORKSRV are mutually exclusive");
+
+  if (getenv("AFL_PRELOAD"))
+  {
+    setenv("LD_PRELOAD", getenv("AFL_PRELOAD"), 1);
+    setenv("DYLD_INSERT_LIBRARIES", getenv("AFL_PRELOAD"), 1);
+  }
+
+  if (getenv("AFL_LD_PRELOAD"))
+    FATAL("Use AFL_PRELOAD instead of AFL_LD_PRELOAD");
+
+  save_cmdline(argc, argv);
+
+  fix_up_banner(argv[optind]);
+
+  check_if_tty();
+
+  get_core_count();
+
+#ifdef HAVE_AFFINITY
+  bind_to_free_cpu();
+#endif /* HAVE_AFFINITY */
+
+  check_crash_handling();
+  check_cpu_governor();
+
+  setup_post();
+  setup_shm();
+  init_count_class16();
+
+  setup_ipsm();
+
+  setup_dirs_fds();
+
+  if (protocol_selected)
+  {
+    protocol_patterns = kl_init(rang);
+    message_types_set = kh_init(strSet);
+
+    if (is_binary) {
+      setup_llm_grammars();
+      // enrich_binary_testcases();
+    }
+    else {
+      setup_llm_grammars();
+      enrich_testcases();
+    }
+  }
+
+  read_testcases();
+  load_auto();
+
+  pivot_inputs();
+
+  if (extras_dir)
+    load_extras(extras_dir);
+
+  if (!timeout_given)
+    find_timeout();
+
+  detect_file_args(argv + optind + 1);
+
+  if (!out_file)
+    setup_stdio_file();
+
+  check_binary(argv[optind]);
+
+  start_time = get_cur_time();
+
+  if (qemu_mode)
+    use_argv = get_qemu_argv(argv[0], argv + optind, argc - optind);
+  else
+    use_argv = argv + optind;
+
+  perform_dry_run(use_argv);
+
+  cull_queue();
+
+  show_init_stats();
+
+  seek_to = find_start_position();
+
+  write_stats_file(0, 0, 0);
+  save_auto();
+
+  if (stop_soon)
+    goto stop_fuzzing;
+
+  /* Woop woop woop */
+
+  if (!not_on_tty)
+  {
+    sleep(4);
+    start_time += 4000;
+    if (stop_soon)
+      goto stop_fuzzing;
+  }
+
+  if (state_aware_mode)
+  {
+
+    if (state_ids_count == 0)
+    {
+      PFATAL("No server states have been detected. Server responses are likely empty!");
+    }
+
+    while (1)
+    {
+      u8 skipped_fuzz;
+
+      struct queue_entry *selected_seed = NULL;
+      while (!selected_seed || selected_seed->region_count == 0)
+      {
+        target_state_id = choose_target_state(state_selection_algo);
+
+        /* Update favorites based on the selected state */
+        cull_queue();
+
+        /* Update number of times a state has been selected for targeted fuzzing */
+        khint_t k = kh_get(hms, khms_states, target_state_id);
+        if (k != kh_end(khms_states))
+        {
+          kh_val(khms_states, k)->selected_times++;
+        }
+
+        selected_seed = choose_seed(target_state_id, seed_selection_algo);
+      }
+
+      /* Seek to the selected seed */
+      if (selected_seed)
+      {
+        if (!queue_cur)
+        {
+          current_entry = 0;
+          cur_skipped_paths = 0;
+          queue_cur = queue;
+          queue_cycle++;
+        }
+        while (queue_cur != selected_seed)
+        {
+          queue_cur = queue_cur->next;
+          current_entry++;
+          if (!queue_cur)
+          {
+            current_entry = 0;
+            cur_skipped_paths = 0;
+            queue_cur = queue;
+            queue_cycle++;
+          }
+        }
+      }
+
+      skipped_fuzz = fuzz_one(use_argv);
+
+      if (!stop_soon && sync_id && !skipped_fuzz)
+      {
+
+        if (!(sync_interval_cnt++ % SYNC_INTERVAL))
+          sync_fuzzers(use_argv);
+      }
+
+      if (!stop_soon && exit_1)
+        stop_soon = 2;
+
+      if (stop_soon)
+        break;
+    }
+  }
+  else
+  {
+    while (1)
+    {
+
+      u8 skipped_fuzz;
+
+      cull_queue();
+
+      if (!queue_cur)
+      {
+
+        queue_cycle++;
+        current_entry = 0;
+        cur_skipped_paths = 0;
+        queue_cur = queue;
+
+        while (seek_to)
+        {
+          current_entry++;
+          seek_to--;
+          queue_cur = queue_cur->next;
+        }
+
+        show_stats();
+
+        if (not_on_tty)
+        {
+          ACTF("Entering queue cycle %llu.", queue_cycle);
+          fflush(stdout);
+        }
+
+        /* If we had a full queue cycle with no new finds, try
+           recombination strategies next. */
+
+        if (queued_paths == prev_queued)
+        {
+
+          if (use_splicing)
+            cycles_wo_finds++;
+          else
+            use_splicing = 1;
+        }
+        else
+          cycles_wo_finds = 0;
+
+        prev_queued = queued_paths;
+
+        if (sync_id && queue_cycle == 1 && getenv("AFL_IMPORT_FIRST"))
+          sync_fuzzers(use_argv);
+      }
+
+      skipped_fuzz = fuzz_one(use_argv);
+
+      if (!stop_soon && sync_id && !skipped_fuzz)
+      {
+
+        if (!(sync_interval_cnt++ % SYNC_INTERVAL))
+          sync_fuzzers(use_argv);
+      }
+
+      if (!stop_soon && exit_1)
+        stop_soon = 2;
+
+      if (stop_soon)
+        break;
+
+      queue_cur = queue_cur->next;
+      current_entry++;
+    }
+  }
+
+  if (queue_cur)
+    show_stats();
+
+  /* If we stopped programmatically, we kill the forkserver and the current runner.
+     If we stopped manually, this is done by the signal handler. */
+  if (stop_soon == 2)
+  {
+    if (child_pid > 0)
+      kill(child_pid, SIGKILL);
+    if (forksrv_pid > 0)
+      kill(forksrv_pid, SIGKILL);
+  }
+  /* Now that we've killed the forkserver, we wait for it to be able to get rusage stats. */
+  if (waitpid(forksrv_pid, NULL, 0) <= 0)
+  {
+    WARNF("error waitpid\n");
+  }
+
+  write_bitmap();
+  write_stats_file(0, 0, 0);
+  save_auto();
+
+stop_fuzzing:
+
+  SAYF(CURSOR_SHOW cLRD "\n\n+++ Testing aborted %s +++\n" cRST,
+       stop_soon == 2 ? "programmatically" : "by user");
+
+  /* Running for more than 30 minutes but still doing first cycle? */
+
+  if (queue_cycle == 1 && get_cur_time() - start_time > 30 * 60 * 1000)
+  {
+
+    SAYF("\n" cYEL "[!] " cRST
+         "Stopped during the first cycle, results may be incomplete.\n"
+         "    (For info on resuming, see %s/README.)\n",
+         doc_path);
+  }
+
+  fclose(plot_file);
+  destroy_queue();
+  destroy_extras();
+  ck_free(target_path);
+  ck_free(sync_id);
+
+  destroy_ipsm();
+
+  alloc_report();
+
+  OKF("We're done here. Have a nice day!\n");
+
+  exit(0);
+}
+
 // int main(int argc, char **argv)
 // {
-
-//   s32 opt;
-//   u64 prev_queued = 0;
-//   u32 sync_interval_cnt = 0, seek_to;
-//   u8 *extras_dir = 0;
-//   u8 mem_limit_given = 0;
-//   u8 exit_1 = !!getenv("AFL_BENCH_JUST_ONE");
-//   // char** use_argv;
-
-//   struct timeval tv;
-//   struct timezone tz;
-
-//   SAYF(cCYA "afl-fuzz " cBRI VERSION cRST " by <lcamtuf@google.com>\n");
-
-//   doc_path = access(DOC_PATH, F_OK) ? "docs" : DOC_PATH;
-
-//   gettimeofday(&tv, &tz);
-//   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
-
-//   while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:")) > 0)
-
-//     switch (opt)
-//     {
-
-//     case 'i': /* input dir */
-
-//       if (in_dir)
-//         FATAL("Multiple -i options not supported");
-//       in_dir = optarg;
-
-//       if (!strcmp(in_dir, "-"))
-//         in_place_resume = 1;
-
-//       break;
-
-//     case 'o': /* output dir */
-
-//       if (out_dir)
-//         FATAL("Multiple -o options not supported");
-//       out_dir = optarg;
-//       break;
-
-//     case 'M':
-//     { /* master sync ID */
-
-//       u8 *c;
-
-//       if (sync_id)
-//         FATAL("Multiple -S or -M options not supported");
-//       sync_id = ck_strdup(optarg);
-
-//       if ((c = strchr(sync_id, ':')))
-//       {
-
-//         *c = 0;
-
-//         if (sscanf(c + 1, "%u/%u", &master_id, &master_max) != 2 ||
-//             !master_id || !master_max || master_id > master_max ||
-//             master_max > 1000000)
-//           FATAL("Bogus master ID passed to -M");
-//       }
-
-//       force_deterministic = 1;
-//     }
-
-//     break;
-
-//     case 'S':
-
-//       if (sync_id)
-//         FATAL("Multiple -S or -M options not supported");
-//       sync_id = ck_strdup(optarg);
-//       break;
-
-//     case 'f': /* target file */
-
-//       if (out_file)
-//         FATAL("Multiple -f options not supported");
-//       out_file = optarg;
-//       break;
-
-//     case 'x': /* dictionary */
-
-//       if (extras_dir)
-//         FATAL("Multiple -x options not supported");
-//       extras_dir = optarg;
-//       break;
-
-//     case 't':
-//     { /* timeout */
-
-//       u8 suffix = 0;
-
-//       if (timeout_given)
-//         FATAL("Multiple -t options not supported");
-
-//       if (sscanf(optarg, "%u%c", &exec_tmout, &suffix) < 1 ||
-//           optarg[0] == '-')
-//         FATAL("Bad syntax used for -t");
-
-//       if (exec_tmout < 5)
-//         FATAL("Dangerously low value of -t");
-
-//       if (suffix == '+')
-//         timeout_given = 2;
-//       else
-//         timeout_given = 1;
-
-//       break;
-//     }
-
-//     case 'm':
-//     { /* mem limit */
-
-//       u8 suffix = 'M';
-
-//       if (mem_limit_given)
-//         FATAL("Multiple -m options not supported");
-//       mem_limit_given = 1;
-
-//       if (!strcmp(optarg, "none"))
-//       {
-
-//         mem_limit = 0;
-//         break;
-//       }
-
-//       if (sscanf(optarg, "%llu%c", &mem_limit, &suffix) < 1 ||
-//           optarg[0] == '-')
-//         FATAL("Bad syntax used for -m");
-
-//       switch (suffix)
-//       {
-
-//       case 'T':
-//         mem_limit *= 1024 * 1024;
-//         break;
-//       case 'G':
-//         mem_limit *= 1024;
-//         break;
-//       case 'k':
-//         mem_limit /= 1024;
-//         break;
-//       case 'M':
-//         break;
-
-//       default:
-//         FATAL("Unsupported suffix or bad syntax for -m");
-//       }
-
-//       if (mem_limit < 5)
-//         FATAL("Dangerously low value of -m");
-
-//       if (sizeof(rlim_t) == 4 && mem_limit > 2000)
-//         FATAL("Value of -m out of range on 32-bit systems");
-//     }
-
-//     break;
-
-//     case 'd': /* skip deterministic */
-
-//       if (skip_deterministic)
-//         FATAL("Multiple -d options not supported");
-//       skip_deterministic = 1;
-//       use_splicing = 1;
-//       break;
-
-//     case 'B': /* load bitmap */
-
-//       /* This is a secret undocumented option! It is useful if you find
-//          an interesting test case during a normal fuzzing process, and want
-//          to mutate it without rediscovering any of the test cases already
-//          found during an earlier run.
-
-//          To use this mode, you need to point -B to the fuzz_bitmap produced
-//          by an earlier run for the exact same binary... and that's it.
-
-//          I only used this once or twice to get variants of a particular
-//          file, so I'm not making this an official setting. */
-
-//       if (in_bitmap)
-//         FATAL("Multiple -B options not supported");
-
-//       in_bitmap = optarg;
-//       read_bitmap(in_bitmap);
-//       break;
-
-//     case 'C': /* crash mode */
-
-//       if (crash_mode)
-//         FATAL("Multiple -C options not supported");
-//       crash_mode = FAULT_CRASH;
-//       break;
-
-//     case 'n': /* dumb mode */
-
-//       if (dumb_mode)
-//         FATAL("Multiple -n options not supported");
-//       if (getenv("AFL_DUMB_FORKSRV"))
-//         dumb_mode = 2;
-//       else
-//         dumb_mode = 1;
-
-//       break;
-
-//     case 'T': /* banner */
-
-//       if (use_banner)
-//         FATAL("Multiple -T options not supported");
-//       use_banner = optarg;
-//       break;
-
-//     case 'Q': /* QEMU mode */
-
-//       if (qemu_mode)
-//         FATAL("Multiple -Q options not supported");
-//       qemu_mode = 1;
-
-//       if (!mem_limit_given)
-//         mem_limit = MEM_LIMIT_QEMU;
-
-//       break;
-
-//     case 'N': /* Network configuration */
-//       if (use_net)
-//         FATAL("Multiple -N options not supported");
-//       if (parse_net_config(optarg, &net_protocol, &net_ip, &net_port))
-//         FATAL("Bad syntax used for -N. Check the network setting. [tcp/udp]://127.0.0.1/port");
-
-//       use_net = 1;
-//       break;
-
-//     case 'D': /* waiting time for the server initialization */
-//       if (server_wait)
-//         FATAL("Multiple -D options not supported");
-
-//       if (sscanf(optarg, "%u", &server_wait_usecs) < 1 || optarg[0] == '-')
-//         FATAL("Bad syntax used for -D");
-//       server_wait = 1;
-//       break;
-
-//     case 'W': /* polling timeout determining maximum amount of time waited before concluding that no responses are forthcoming*/
-//       if (socket_timeout)
-//         FATAL("Multiple -W options not supported");
-
-//       if (sscanf(optarg, "%u", &poll_wait_msecs) < 1 || optarg[0] == '-')
-//         FATAL("Bad syntax used for -W");
-//       poll_wait = 1;
-//       break;
-
-//     case 'w': /* receive/send socket timeout determining time waited for each response */
-//       if (socket_timeout)
-//         FATAL("Multiple -w options not supported");
-
-//       if (sscanf(optarg, "%u", &socket_timeout_usecs) < 1 || optarg[0] == '-')
-//         FATAL("Bad syntax used for -w");
-//       socket_timeout = 1;
-//       break;
-
-//     case 'e': /* network namespace name */
-//       if (netns_name)
-//         FATAL("Multiple -e options not supported");
-
-//       netns_name = optarg;
-//       break;
-
-//     case 'P': /* protocol to be tested */
-//       if (protocol_selected)
-//         FATAL("Multiple -P options not supported");
-
-//       if (!strcmp(optarg, "RTSP"))
+//   // AFLNet - Check for required arguments
+//   protocol_selected = 1;
+//   protocol_name = ck_strdup(argv[1]);
+//   in_dir = argv[3];
+
+//       if (!strcmp(argv[1], "RTSP"))
 //       {
 //         extract_requests = &extract_requests_rtsp;
 //         extract_response_codes = &extract_response_codes_rtsp;
 //         is_binary = 0;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-5";
+
 //       }
-//       else if (!strcmp(optarg, "FTP"))
+//       else if (!strcmp(argv[1], "FTP"))
 //       {
 //         extract_requests = &extract_requests_ftp;
 //         extract_response_codes = &extract_response_codes_ftp;
 //         is_binary = 0;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-5";
 //       }
-//       else if (!strcmp(optarg, "DTLS12"))
+//       else if (!strcmp(argv[1], "DTLS12"))
 //       {
 //         extract_requests = &extract_requests_dtls12;
 //         extract_response_codes = &extract_response_codes_dtls12;
 //         is_binary = 1;
-//       }
-//       else if (!strcmp(optarg, "DNS"))
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-5";
+//           }
+//       else if (!strcmp(argv[1], "DNS"))
 //       {
 //         extract_requests = &extract_requests_dns;
 //         extract_response_codes = &extract_response_codes_dns;
 //         is_binary = 1;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-5";
 //       }
-//       else if (!strcmp(optarg, "DICOM"))
+//       else if (!strcmp(argv[1], "DICOM"))
 //       {
 //         extract_requests = &extract_requests_dicom;
 //         extract_response_codes = &extract_response_codes_dicom;
 //         is_binary = 1;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-5";
 //       }
-//       else if (!strcmp(optarg, "SMTP"))
+//       else if (!strcmp(argv[1], "SMTP"))
 //       {
 //         extract_requests = &extract_requests_smtp;
 //         extract_response_codes = &extract_response_codes_smtp;
 //         is_binary = 0;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-5";
 //       }
-//       else if (!strcmp(optarg, "SSH"))
+//       else if (!strcmp(argv[1], "SSH"))
 //       {
 //         extract_requests = &extract_requests_ssh;
 //         extract_response_codes = &extract_response_codes_ssh;
 //         is_binary = 1;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-5";
 //       }
-//       else if (!strcmp(optarg, "TLS"))
+//       else if (!strcmp(argv[1], "TLS"))
 //       {
 //         extract_requests = &extract_requests_tls;
 //         extract_response_codes = &extract_response_codes_tls;
 //         is_binary = 1;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-5";
 //       }
-//       else if (!strcmp(optarg, "SIP"))
+//       else if (!strcmp(argv[1], "SIP"))
 //       {
 //         extract_requests = &extract_requests_sip;
 //         extract_response_codes = &extract_response_codes_sip;
 //         is_binary = 0;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-5";
 //       }
-//       else if (!strcmp(optarg, "HTTP"))
+//       else if (!strcmp(argv[1], "HTTP"))
 //       {
 //         extract_requests = &extract_requests_http;
 //         extract_response_codes = &extract_response_codes_http;
 //         is_binary = 0;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-5";
 //       }
-//       else if (!strcmp(optarg, "IPP"))
+//       else if (!strcmp(argv[1], "IPP"))
 //       {
 //         extract_requests = &extract_requests_ipp;
 //         extract_response_codes = &extract_response_codes_ipp;
 //         is_binary = 0;
+//         if (argv[2][0] == '1')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-1";
+//         else if (argv[2][0] == '2')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-2";
+//         else if (argv[2][0] == '3')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-3";
+//         else if (argv[2][0] == '4')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-4";
+//         else if (argv[2][0] == '5')
+//                 out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-5";
 //       }
 //       else
 //       {
-//         FATAL("%s protocol is not supported yet!", optarg);
+//         FATAL("%s protocol is not supported yet!", argv[1]);
 //       }
-//       protocol_name = ck_strdup(optarg);
-//       protocol_selected = 1;
-
-//       break;
-
-//     case 'K':
-//       if (terminate_child)
-//         FATAL("Multiple -K options not supported");
-//       terminate_child = 1;
-//       break;
-
-//     case 'E':
-//       if (state_aware_mode)
-//         FATAL("Multiple -E options not supported");
-//       state_aware_mode = 1;
-//       break;
-
-//     case 'q': /* state selection option */
-//       if (sscanf(optarg, "%hhu", &state_selection_algo) < 1 || optarg[0] == '-')
-//         FATAL("Bad syntax used for -q");
-//       break;
-
-//     case 's': /* seed selection option */
-//       if (sscanf(optarg, "%hhu", &seed_selection_algo) < 1 || optarg[0] == '-')
-//         FATAL("Bad syntax used for -s");
-//       break;
-
-//     case 'R':
-//       if (region_level_mutation)
-//         FATAL("Multiple -R options not supported");
-//       region_level_mutation = 1;
-//       break;
-
-//     case 'F':
-//       if (false_negative_reduction)
-//         FATAL("Multiple -F options not supported");
-//       false_negative_reduction = 1;
-//       break;
-
-//     case 'c': /* cleanup script */
-
-//       if (cleanup_script)
-//         FATAL("Multiple -c options not supported");
-//       cleanup_script = optarg;
-//       break;
-
-//     case 'l': /* local port to connect from */
-//       // This option is only used for targets that send responses to a specific port number
-//       // The Kamailio SIP server is an example
-
-//       if (local_port)
-//         FATAL("Multiple -l options not supported");
-//       local_port = atoi(optarg);
-//       if (local_port < 1024 || local_port > 65535)
-//         FATAL("Invalid source port number");
-//       break;
-
-//     default:
-
-//       usage(argv[0]);
-//     }
-
-//   if (optind == argc || !in_dir || !out_dir)
-//     usage(argv[0]);
-
-//   // AFLNet - Check for required arguments
-//   if (!use_net)
-//     FATAL("Please specify network information of the server under test (e.g., tcp://127.0.0.1/8554)");
-
-//   if (!protocol_selected)
-//     FATAL("Please specify the protocol to be tested using the -P option");
-
-//   if (netns_name)
-//   {
-//     if (check_ep_capability(CAP_SYS_ADMIN, argv[0]) != 0)
-//       FATAL("Could not run the server under test in a \"%s\" network namespace "
-//             "without CAP_SYS_ADMIN capability.\n You can set it by invoking "
-//             "afl-fuzz with sudo or by \"$ setcap cap_sys_admin+ep /path/to/afl-fuzz\".",
-//             netns_name);
-//   }
-
-//   setup_signal_handlers();
-//   check_asan_opts();
-
-//   if (sync_id)
-//     fix_up_sync();
-
-//   if (!strcmp(in_dir, out_dir))
-//     FATAL("Input and output directories can't be the same");
-
-//   if (dumb_mode)
-//   {
-
-//     if (crash_mode)
-//       FATAL("-C and -n are mutually exclusive");
-//     if (qemu_mode)
-//       FATAL("-Q and -n are mutually exclusive");
-//   }
-
-//   if (getenv("AFL_NO_FORKSRV"))
-//     no_forkserver = 1;
-//   if (getenv("AFL_NO_CPU_RED"))
-//     no_cpu_meter_red = 1;
-//   if (getenv("AFL_NO_ARITH"))
-//     no_arith = 1;
-//   if (getenv("AFL_SHUFFLE_QUEUE"))
-//     shuffle_queue = 1;
-//   if (getenv("AFL_FAST_CAL"))
-//     fast_cal = 1;
-
-//   if (getenv("AFL_HANG_TMOUT"))
-//   {
-//     hang_tmout = atoi(getenv("AFL_HANG_TMOUT"));
-//     if (!hang_tmout)
-//       FATAL("Invalid value of AFL_HANG_TMOUT");
-//   }
-
-//   if (dumb_mode == 2 && no_forkserver)
-//     FATAL("AFL_DUMB_FORKSRV and AFL_NO_FORKSRV are mutually exclusive");
-
-//   if (getenv("AFL_PRELOAD"))
-//   {
-//     setenv("LD_PRELOAD", getenv("AFL_PRELOAD"), 1);
-//     setenv("DYLD_INSERT_LIBRARIES", getenv("AFL_PRELOAD"), 1);
-//   }
-
-//   if (getenv("AFL_LD_PRELOAD"))
-//     FATAL("Use AFL_PRELOAD instead of AFL_LD_PRELOAD");
-
-//   save_cmdline(argc, argv);
-
-//   fix_up_banner(argv[optind]);
-
-//   check_if_tty();
-
-//   get_core_count();
-
-// #ifdef HAVE_AFFINITY
-//   bind_to_free_cpu();
-// #endif /* HAVE_AFFINITY */
-
-//   check_crash_handling();
-//   check_cpu_governor();
-
-//   setup_post();
-//   setup_shm();
-//   init_count_class16();
-
-//   setup_ipsm();
-
-//   setup_dirs_fds();
 
 //   if (protocol_selected)
 //   {
@@ -10722,458 +11170,11 @@ static int check_ep_capability(cap_value_t cap, const char *filename)
 //     }
 //   }
 
-//   read_testcases();
-//   load_auto();
-
-//   pivot_inputs();
-
-//   if (extras_dir)
-//     load_extras(extras_dir);
-
-//   if (!timeout_given)
-//     find_timeout();
-
-//   detect_file_args(argv + optind + 1);
-
-//   if (!out_file)
-//     setup_stdio_file();
-
-//   check_binary(argv[optind]);
-
-//   start_time = get_cur_time();
-
-//   if (qemu_mode)
-//     use_argv = get_qemu_argv(argv[0], argv + optind, argc - optind);
-//   else
-//     use_argv = argv + optind;
-
-//   perform_dry_run(use_argv);
-
-//   cull_queue();
-
-//   show_init_stats();
-
-//   seek_to = find_start_position();
-
-//   write_stats_file(0, 0, 0);
-//   save_auto();
-
-//   if (stop_soon)
-//     goto stop_fuzzing;
-
-//   /* Woop woop woop */
-
-//   if (!not_on_tty)
-//   {
-//     sleep(4);
-//     start_time += 4000;
-//     if (stop_soon)
-//       goto stop_fuzzing;
-//   }
-
-//   if (state_aware_mode)
-//   {
-
-//     if (state_ids_count == 0)
-//     {
-//       PFATAL("No server states have been detected. Server responses are likely empty!");
-//     }
-
-//     while (1)
-//     {
-//       u8 skipped_fuzz;
-
-//       struct queue_entry *selected_seed = NULL;
-//       while (!selected_seed || selected_seed->region_count == 0)
-//       {
-//         target_state_id = choose_target_state(state_selection_algo);
-
-//         /* Update favorites based on the selected state */
-//         cull_queue();
-
-//         /* Update number of times a state has been selected for targeted fuzzing */
-//         khint_t k = kh_get(hms, khms_states, target_state_id);
-//         if (k != kh_end(khms_states))
-//         {
-//           kh_val(khms_states, k)->selected_times++;
-//         }
-
-//         selected_seed = choose_seed(target_state_id, seed_selection_algo);
-//       }
-
-//       /* Seek to the selected seed */
-//       if (selected_seed)
-//       {
-//         if (!queue_cur)
-//         {
-//           current_entry = 0;
-//           cur_skipped_paths = 0;
-//           queue_cur = queue;
-//           queue_cycle++;
-//         }
-//         while (queue_cur != selected_seed)
-//         {
-//           queue_cur = queue_cur->next;
-//           current_entry++;
-//           if (!queue_cur)
-//           {
-//             current_entry = 0;
-//             cur_skipped_paths = 0;
-//             queue_cur = queue;
-//             queue_cycle++;
-//           }
-//         }
-//       }
-
-//       skipped_fuzz = fuzz_one(use_argv);
-
-//       if (!stop_soon && sync_id && !skipped_fuzz)
-//       {
-
-//         if (!(sync_interval_cnt++ % SYNC_INTERVAL))
-//           sync_fuzzers(use_argv);
-//       }
-
-//       if (!stop_soon && exit_1)
-//         stop_soon = 2;
-
-//       if (stop_soon)
-//         break;
-//     }
-//   }
-//   else
-//   {
-//     while (1)
-//     {
-
-//       u8 skipped_fuzz;
-
-//       cull_queue();
-
-//       if (!queue_cur)
-//       {
-
-//         queue_cycle++;
-//         current_entry = 0;
-//         cur_skipped_paths = 0;
-//         queue_cur = queue;
-
-//         while (seek_to)
-//         {
-//           current_entry++;
-//           seek_to--;
-//           queue_cur = queue_cur->next;
-//         }
-
-//         show_stats();
-
-//         if (not_on_tty)
-//         {
-//           ACTF("Entering queue cycle %llu.", queue_cycle);
-//           fflush(stdout);
-//         }
-
-//         /* If we had a full queue cycle with no new finds, try
-//            recombination strategies next. */
-
-//         if (queued_paths == prev_queued)
-//         {
-
-//           if (use_splicing)
-//             cycles_wo_finds++;
-//           else
-//             use_splicing = 1;
-//         }
-//         else
-//           cycles_wo_finds = 0;
-
-//         prev_queued = queued_paths;
-
-//         if (sync_id && queue_cycle == 1 && getenv("AFL_IMPORT_FIRST"))
-//           sync_fuzzers(use_argv);
-//       }
-
-//       skipped_fuzz = fuzz_one(use_argv);
-
-//       if (!stop_soon && sync_id && !skipped_fuzz)
-//       {
-
-//         if (!(sync_interval_cnt++ % SYNC_INTERVAL))
-//           sync_fuzzers(use_argv);
-//       }
-
-//       if (!stop_soon && exit_1)
-//         stop_soon = 2;
-
-//       if (stop_soon)
-//         break;
-
-//       queue_cur = queue_cur->next;
-//       current_entry++;
-//     }
-//   }
-
-//   if (queue_cur)
-//     show_stats();
-
-//   /* If we stopped programmatically, we kill the forkserver and the current runner.
-//      If we stopped manually, this is done by the signal handler. */
-//   if (stop_soon == 2)
-//   {
-//     if (child_pid > 0)
-//       kill(child_pid, SIGKILL);
-//     if (forksrv_pid > 0)
-//       kill(forksrv_pid, SIGKILL);
-//   }
-//   /* Now that we've killed the forkserver, we wait for it to be able to get rusage stats. */
-//   if (waitpid(forksrv_pid, NULL, 0) <= 0)
-//   {
-//     WARNF("error waitpid\n");
-//   }
-
-//   write_bitmap();
-//   write_stats_file(0, 0, 0);
-//   save_auto();
-
-// stop_fuzzing:
-
-//   SAYF(CURSOR_SHOW cLRD "\n\n+++ Testing aborted %s +++\n" cRST,
-//        stop_soon == 2 ? "programmatically" : "by user");
-
-//   /* Running for more than 30 minutes but still doing first cycle? */
-
-//   if (queue_cycle == 1 && get_cur_time() - start_time > 30 * 60 * 1000)
-//   {
-
-//     SAYF("\n" cYEL "[!] " cRST
-//          "Stopped during the first cycle, results may be incomplete.\n"
-//          "    (For info on resuming, see %s/README.)\n",
-//          doc_path);
-//   }
-
-//   fclose(plot_file);
-//   destroy_queue();
-//   destroy_extras();
-//   ck_free(target_path);
-//   ck_free(sync_id);
-
-//   destroy_ipsm();
-
-//   alloc_report();
+//   // printf("protocol_name: %s\n", protocol_name);
 
 //   OKF("We're done here. Have a nice day!\n");
 
 //   exit(0);
 // }
-
-int main(int argc, char **argv)
-{
-  // AFLNet - Check for required arguments
-  protocol_selected = 1;
-  protocol_name = ck_strdup(argv[1]);
-  in_dir = argv[3];
-
-      if (!strcmp(argv[1], "RTSP"))
-      {
-        extract_requests = &extract_requests_rtsp;
-        extract_response_codes = &extract_response_codes_rtsp;
-        is_binary = 0;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/RTSP/RTSP-5";
-
-      }
-      else if (!strcmp(argv[1], "FTP"))
-      {
-        extract_requests = &extract_requests_ftp;
-        extract_response_codes = &extract_response_codes_ftp;
-        is_binary = 0;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/FTP/FTP-5";
-      }
-      else if (!strcmp(argv[1], "DTLS12"))
-      {
-        extract_requests = &extract_requests_dtls12;
-        extract_response_codes = &extract_response_codes_dtls12;
-        is_binary = 1;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DTLS12/DTLS12-5";
-          }
-      else if (!strcmp(argv[1], "DNS"))
-      {
-        extract_requests = &extract_requests_dns;
-        extract_response_codes = &extract_response_codes_dns;
-        is_binary = 1;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DNS/DNS-5";
-      }
-      else if (!strcmp(argv[1], "DICOM"))
-      {
-        extract_requests = &extract_requests_dicom;
-        extract_response_codes = &extract_response_codes_dicom;
-        is_binary = 1;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/DICOM/DICOM-5";
-      }
-      else if (!strcmp(argv[1], "SMTP"))
-      {
-        extract_requests = &extract_requests_smtp;
-        extract_response_codes = &extract_response_codes_smtp;
-        is_binary = 0;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SMTP/SMTP-5";
-      }
-      else if (!strcmp(argv[1], "SSH"))
-      {
-        extract_requests = &extract_requests_ssh;
-        extract_response_codes = &extract_response_codes_ssh;
-        is_binary = 1;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SSH/SSH-5";
-      }
-      else if (!strcmp(argv[1], "TLS"))
-      {
-        extract_requests = &extract_requests_tls;
-        extract_response_codes = &extract_response_codes_tls;
-        is_binary = 1;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/TLS/TLS-5";
-      }
-      else if (!strcmp(argv[1], "SIP"))
-      {
-        extract_requests = &extract_requests_sip;
-        extract_response_codes = &extract_response_codes_sip;
-        is_binary = 0;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/SIP/SIP-5";
-      }
-      else if (!strcmp(argv[1], "HTTP"))
-      {
-        extract_requests = &extract_requests_http;
-        extract_response_codes = &extract_response_codes_http;
-        is_binary = 0;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/HTTP/HTTP-5";
-      }
-      else if (!strcmp(argv[1], "IPP"))
-      {
-        extract_requests = &extract_requests_ipp;
-        extract_response_codes = &extract_response_codes_ipp;
-        is_binary = 0;
-        if (argv[2][0] == '1')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-1";
-        else if (argv[2][0] == '2')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-2";
-        else if (argv[2][0] == '3')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-3";
-        else if (argv[2][0] == '4')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-4";
-        else if (argv[2][0] == '5')
-                out_dir = "/home/jongmunyang/jongmun/jolp/llm-grammars/IPP/IPP-5";
-      }
-      else
-      {
-        FATAL("%s protocol is not supported yet!", argv[1]);
-      }
-
-  if (protocol_selected)
-  {
-    protocol_patterns = kl_init(rang);
-    message_types_set = kh_init(strSet);
-
-    if (is_binary) {
-      enrich_binary_testcases();
-    }
-    else {
-      setup_llm_grammars();
-      enrich_testcases();
-    }
-  }
-
-  // printf("protocol_name: %s\n", protocol_name);
-
-  OKF("We're done here. Have a nice day!\n");
-
-  exit(0);
-}
 
 #endif /* !AFL_LIB */
