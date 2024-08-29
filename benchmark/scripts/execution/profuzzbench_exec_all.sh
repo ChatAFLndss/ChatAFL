@@ -562,32 +562,32 @@ do
 
             if [[ $FUZZER == "aflnet" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl aflnet out-openssl-aflnet "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl aflnet out-openssl-aflnet "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl out-openssl-chatafl "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl out-openssl-chatafl "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl-cl1" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl1 out-openssl-chatafl_cl1 "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl1 out-openssl-chatafl_cl1 "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl-cl2" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl2 out-openssl-chatafl_cl2 "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl2 out-openssl-chatafl_cl2 "-P TLS -D 200000 -m none -q 3 -s 3 -K -E -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-seed out-openssl-chatafl_seed "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-seed out-openssl-chatafl_seed "-P TLS -D 200000 -m none -q 3 -s 3 -K -E -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-bin out-openssl-chatafl_bin "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-bin out-openssl-chatafl_bin "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
