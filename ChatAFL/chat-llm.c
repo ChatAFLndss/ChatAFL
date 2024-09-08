@@ -904,7 +904,7 @@ char *enrich_sequence(char *sequence, khash_t(strSet) * missing_message_types)
     const char *prompt_template =
         "The following is one sequence of client requests:\\n"
         "%.*s\\n"
-        "Please add the %.*s client requests in the proper locations, and the modified sequence of client requests is:";
+        "Please add the %.*s client requests in the proper locations AND RESPOND WITH A CORRECT MESSAGE SEQUENCE FOR THE PROTOCOL. NO YAPPING! The modified sequence of client requests is:";
 
     int missing_fields_len = 0;
     int missing_fields_capacity = 100;
