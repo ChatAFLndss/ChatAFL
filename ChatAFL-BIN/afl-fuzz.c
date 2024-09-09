@@ -432,6 +432,125 @@ u32 reward_random;
 u32 reward_grammar;
 // Flag to check binary/text based protocol
 u8 is_binary;
+// Binary patterns generated from Language Model
+klist_t(rang) * binary_protocol_patterns;
+
+// TODO
+void setup_llm_grammars_binary()
+{
+
+  ACTF("Getting grammars from LLM...");
+
+  khash_t(consistency_table) *const_table = kh_init(consistency_table);
+  char *first_question;
+  char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question);
+
+  for (int iter = 0; iter < TEMPLATE_CONSISTENCY_COUNT; iter++)
+  {
+    klist_t(gram) *grammar_list = kl_init(gram);
+
+    char *templates_answer = chat_with_llm(templates_prompt, "turbo", GRAMMAR_RETRIES, 0.5);
+    if (templates_answer == NULL)
+      goto free_templates_answer;
+
+    // printf("## Answer from LLM:\n %s\n", templates_answer);
+    char *remaining_prompt = construct_prompt_for_remaining_templates(protocol_name, first_question, templates_answer);
+    // printf("remaining prompt is:\n %s\n", remaining_prompt);
+    char *remaining_templates = chat_with_llm(remaining_prompt, "turbo", GRAMMAR_RETRIES, 0.5);
+    if (remaining_templates == NULL)
+      goto free_remaining;
+
+    // printf("## Remaining templates:\n %s\n", remaining_templates);
+
+    char *combined_templates = NULL;
+    asprintf(&combined_templates, "%s\n%s", templates_answer, remaining_templates);
+
+    char *grammar_output_path = alloc_printf("%s/protocol-grammars/llm-grammar-output-%d", out_dir, iter);
+    int grammar_output_fd = open(grammar_output_path, O_WRONLY | O_CREAT, 0600);
+
+    ck_write(grammar_output_fd, combined_templates, strlen(combined_templates), grammar_output_path);
+
+    close(grammar_output_fd);
+    ck_free(grammar_output_path);
+
+    extract_message_grammars(combined_templates, grammar_list);
+
+    kliter_t(gram) * iter;
+    for (iter = kl_begin(grammar_list); iter != kl_end(grammar_list); iter = kl_next(iter))
+    {
+      json_object *jobj = kl_val(iter);
+
+      json_object *header = json_object_array_get_idx(jobj, 0);
+
+      int absent;
+
+      const char *header_str = json_object_get_string(header);
+
+      khiter_t k = kh_put(consistency_table, const_table, header_str, &absent);
+      if (absent)
+      {
+        khash_t(field_table) *field_table = kh_init(field_table);
+        kh_value(const_table, k) = field_table;
+      }
+
+      for (int i = 1; i < json_object_array_length(jobj); i++)
+      {
+        const char *v = json_object_get_string(json_object_array_get_idx(jobj, i));
+        khash_t(field_table) *field_table = kh_value(const_table, k);
+        khiter_t field_k = kh_put(field_table, field_table, v, &absent);
+        if (absent)
+        {
+          kh_value(field_table, field_k) = 0;
+        }
+        kh_value(field_table, field_k)++;
+      }
+    }
+    kl_destroy_gram(grammar_list);
+
+    free(combined_templates);
+    free(remaining_templates);
+
+  free_remaining:
+    free(remaining_prompt);
+
+  free_templates_answer:
+    free(templates_answer);
+  }
+
+  int pattern_index = 0;
+  for (khiter_t con_t_iter = kh_begin(const_table); con_t_iter != kh_end(const_table); ++con_t_iter)
+  {
+    if (kh_exist(const_table, con_t_iter))
+    {
+      pcre2_code **patterns = ck_alloc(2 * sizeof(pcre2_code *));
+
+      khash_t(field_table) *field_table = kh_value(const_table, con_t_iter);
+
+      json_object *header_v = json_object_new_string(kh_key(const_table, con_t_iter));
+      const char *header_str = json_object_to_json_string(header_v);
+
+      char *pattern_path = alloc_printf("%s/protocol-grammars/pattern-%d", out_dir, pattern_index);
+      pattern_index++;
+      int pattern_fd = open(pattern_path, O_WRONLY | O_CREAT, 0600);
+
+      char *message_type = extract_message_pattern(header_str, field_table, patterns, pattern_fd, pattern_path);
+      if (message_type != NULL)
+      {
+        int discard;
+        kh_put(strSet, message_types_set, message_type, &discard);
+        *kl_pushp(rang, protocol_patterns) = patterns;
+      }
+
+      json_object_put(header_v);
+      close(pattern_fd);
+      ck_free(pattern_path);
+
+    }
+  }
+
+  free(first_question);
+  free(templates_prompt);
+}
 
 void setup_llm_grammars()
 {
@@ -547,6 +666,55 @@ void setup_llm_grammars()
 
   free(first_question);
   free(templates_prompt);
+}
+
+// TODO
+range_list parse_buffer_binary(char *buf, size_t buf_len)
+{
+  range_list best_decomposition;
+  kv_init(best_decomposition);
+  kliter_t(rang) * iter_rang;
+  // Find a valid decomposition of the buffer, according to a header pattern
+  for (iter_rang = kl_begin(protocol_patterns); iter_rang != kl_end(protocol_patterns); iter_rang = kl_next(iter_rang))
+  {
+    pcre2_code **patterns = kl_val(iter_rang);
+    pcre2_code *header_pattern = patterns[0];
+    pcre2_code *fields_pattern = patterns[1];
+
+    if(header_pattern == NULL || fields_pattern == NULL) continue;
+
+    range_list header_groups = starts_with(buf, buf_len, header_pattern);
+
+    if (kv_size(header_groups) == 0)
+    {
+      continue;
+    }
+    else
+    {
+      range header_match = kv_pop(header_groups);
+      char *offsetted_line = buf;
+      size_t offsetted_len = buf_len;
+      range_list dyn_ranges = get_mutable_ranges(offsetted_line, offsetted_len, header_match.len, fields_pattern);
+
+      for (int i = 0; i < kv_size(dyn_ranges); i++)
+      {
+        kv_push(range, header_groups, kv_A(dyn_ranges, i));
+      }
+      kv_destroy(dyn_ranges);
+
+      best_decomposition = header_groups;
+
+      break;
+    }
+  }
+
+  if (kv_size(best_decomposition) == 0)
+  {
+    // Graceful degradataion
+    range v = {.start = 0, .len = buf_len, .mutable = 1};
+    kv_push(range, best_decomposition, v);
+  }
+  return best_decomposition;
 }
 
 range_list parse_buffer(char *buf, size_t buf_len)
@@ -8199,7 +8367,8 @@ havoc_stage:
     stage_short = "havoc_exploit";
     // exploitation - utilize the grammars we have
 
-    original_ranges = parse_buffer(out_buf, temp_len);
+    if (is_binary) { original_ranges = parse_buffer_binary(out_buf, temp_len); }
+    else { original_ranges = parse_buffer(out_buf, temp_len); }
   }
 
   int rc = kv_size(original_ranges);
@@ -8664,7 +8833,10 @@ havoc_stage:
 
         out_buf = new_buf;
         temp_len = src_region_len;
-        range_list temp_ranges = parse_buffer(out_buf, temp_len);
+
+        if (is_binary) { range_list temp_ranges = parse_buffer_binary(out_buf, temp_len); }
+        else { range_list temp_ranges = parse_buffer(out_buf, temp_len); }
+        
         rc = kv_size(temp_ranges);
         ranges = temp_ranges.a;
         break;
@@ -10711,11 +10883,12 @@ int main(int argc, char **argv)
   if (protocol_selected)
   {
     protocol_patterns = kl_init(rang);
+    binary_protocol_patterns = kl_init(rang);
     message_types_set = kh_init(strSet);
 
     if (is_binary) {
-      setup_llm_grammars();
       // enrich_binary_testcases();
+      setup_llm_grammars_binary();
     }
     else {
       setup_llm_grammars();
