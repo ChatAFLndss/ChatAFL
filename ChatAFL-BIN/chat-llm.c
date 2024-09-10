@@ -1218,12 +1218,12 @@ char *construct_response_format_for_getting_splitted_message()
                                                 "\"type\": \"string\""
                                             "}" // items
                                         "}" // hex_dump_message
-                                    "}" // properties
+                                    "}," // properties
+                                    "\"required\": [\"hex_dump_message\"],"
+                                    "\"additionalProperties\": false"
                                 "}," // schema
-                                "\"required\": [\"hex_dump_message\"],"
-                                "\"additionalProperties\": false"
-                            "}," // json_schema
-                            "\"strict\": true"
+                                "\"strict\": true"
+                            "}" // json_schema
                             "}"; // type
 
 
@@ -1296,13 +1296,13 @@ char *construct_response_format_for_getting_mutable_fields()
                                                 "}" // properties
                                             "}" // items
                                         "}" // structured_hex_dump_message
-                                    "}" // properties
+                                    "}," // properties
+                                    "\"required\": [\"structured_hex_dump_message\"],"
+                                    "\"additionalProperties\": false"
                                 "}," // schema
-                                "\"required\": [\"structured_hex_dump_message\"],"
-                                "\"additionalProperties\": false"
-                            "}," // json_schema
                             "\"strict\": true"
-                            "}"; // type
+                            "}," // json_schema
+                        "}"; // type
 
 
     return response_format;
@@ -1360,7 +1360,7 @@ char *construct_response_format_for_binary_protocol_message_types()
                             "}," // schema
                             "\"required\": [\"client_request_method\"],"
                             "\"additionalProperties\": false"
-                            "}," // json_schema
+                            "}" // json_schema
                             "\"strict\": true"
                             "}"; // type
 
