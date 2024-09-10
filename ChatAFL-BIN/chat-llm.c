@@ -1164,6 +1164,150 @@ char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response
 
 }
 
+char *construct_prompt_for_getting_splitted_message(char *hex_dump_message_sequence, char *protocol_name)
+{
+    /***
+     * ```
+     * WHOLE_HEX_DUMP_MESSAGE_SEQUENCE
+     * ```
+     * This is DNS protocol hex dump message.
+     * Split this hex dump message sequence into individual messages.
+     */
+    char *prompt =  "```\\n%s\\n```\\n"
+                    "This is %s protocol hex dump message sequence.\\n"
+                    "Split this hex dump message sequence into individual messages.";
+    asprintf(&prompt, prompt, hex_dump_message_sequence, protocol_name);
+
+    char *formatted_prompt = "[{\"role\": \"system\", \"content\": \"You are a helpful assistant\"}, "
+                             "{\"role\": \"user\", \"content\": \"%s\"}]";
+    asprintf(&formatted_prompt, formatted_prompt, prompt);
+
+    return formatted_prompt;
+}
+
+char *construct_response_format_for_getting_splitted_message()
+{
+    /***
+     * { "type": "json_schema",
+     *   "json_schema": {
+     *      "name": "hex_dump_message_sequence"
+     *      "schema": {
+     *          "type": "object",
+     *          "properties": {
+     *              "hex_dump_message": {
+     *                  "type": "array",
+     *                  "items": {
+     *                      "type": "string"
+     *                  }
+     *              }
+     *          }
+     *      }
+     *   }
+     * }
+     */
+
+    char *response_format = "{\"type\": \"json_schema\","
+                            "\"json_schema\": {"
+                                "\"name\": \"hex_dump_message_sequence\","
+                                "\"schema\": {"
+                                    "\"type\": \"object\","
+                                    "\"properties\": {"
+                                        "\"hex_dump_message\": {"
+                                            "\"type\": \"array\","
+                                            "\"items\": {"
+                                                "\"type\": \"string\""
+                                            "}" // items
+                                        "}" // hex_dump_message
+                                    "}" // properties
+                                "}," // schema
+                                "\"required\": [\"hex_dump_message\"],"
+                                "\"additionalProperties\": false"
+                            "}," // json_schema
+                            "\"strict\": true"
+                            "}"; // type
+
+
+    return response_format;
+}
+
+char *construct_prompt_for_getting_mutable_fields(char *hex_dump, char *protocol_name)
+{
+    /***
+     * ```
+     * HEX_DUMP_MESSAGE
+     * ```
+     * This is DNS protocol hex dump message.
+     * Split the hex dump message into individual fields according to the protocol structure,
+     * and check if the message still functions correctly even if the fields are mutated.
+     */
+    char *prompt =  "```\\n%s\\n```\\n"
+                    "This is %s protocol hex dump message.\\n"
+                    "Split the hex dump message into individual fields according to the protocol structure, and check if the message still functions correctly even if the fields are mutated.";
+    asprintf(&prompt, prompt, hex_dump, protocol_name);
+
+    char *formatted_prompt = "[{\"role\": \"system\", \"content\": \"You are a helpful assistant\"}, "
+                             "{\"role\": \"user\", \"content\": \"%s\"}]";
+    asprintf(&formatted_prompt, formatted_prompt, prompt);
+
+    return formatted_prompt;
+}
+
+char *construct_response_format_for_getting_mutable_fields()
+{
+    /***
+     * { "type": "json_schema",
+     *   "json_schema": {
+     *      "name": "structured_protocol_hex_dump_message"
+     *      "schema": {
+     *          "type": "object",
+     *          "properties": {
+     *              "structured_hex_dump_message": {
+     *                  "type": "array",
+     *                  "items": {
+     *                      "type": "object",
+     *                      "properties": {
+     *                          "hex_dump": { "type": "string" },
+     *                          "mutable": { "type": "integer",
+     *                                       "description": "0 is not functions correctly and 1 is functions correctly even if the fields are mutated.",
+     *                                       "enum": [0, 1]
+     *                          }
+     *                      }
+     *                  }
+     *              }
+     *          }
+     *      }
+     *   }
+     * }
+     */
+
+    char *response_format = "{\"type\": \"json_schema\","
+                            "\"json_schema\": {"
+                                "\"name\": \"structured_protocol_hex_dump_message\","
+                                "\"schema\": {"
+                                    "\"type\": \"object\","
+                                    "\"properties\": {"
+                                        "\"structured_hex_dump_message\": {"
+                                            "\"type\": \"array\","
+                                            "\"items\": {"
+                                                "\"type\": \"object\","
+                                                "\"properties\": {"
+                                                    "\"hex_dump\": {\"type\": \"string\"},"
+                                                    "\"mutable\": {\"type\": \"integer\", \"description\": \"0 is not functions correctly and 1 is functions correctly even if the fields are mutated.\", \"enum\": [0, 1]}"
+                                                "}" // properties
+                                            "}" // items
+                                        "}" // structured_hex_dump_message
+                                    "}" // properties
+                                "}," // schema
+                                "\"required\": [\"structured_hex_dump_message\"],"
+                                "\"additionalProperties\": false"
+                            "}," // json_schema
+                            "\"strict\": true"
+                            "}"; // type
+
+
+    return response_format;
+}
+
 char *construct_prompt_for_binary_protocol_message_types(char *protocol_name)
 {
     /***

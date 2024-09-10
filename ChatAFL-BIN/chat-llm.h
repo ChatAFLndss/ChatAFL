@@ -93,7 +93,12 @@ message_set_list message_combinations(khash_t(strSet)* sequence, int size);
 
 // For binary protocol
 char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature);
-/* for get client message types (methods) */
+/* for getting grammars */
+char *construct_prompt_for_getting_splitted_message(char *hex_dump_message_sequence, char *protocol_name);
+char *construct_response_format_for_getting_splitted_message();
+char *construct_prompt_for_getting_mutable_fields(char *hex_dump, char *protocol_name);
+char *construct_response_format_for_getting_mutable_fields();
+/* for getting client message types (methods) */
 char *construct_prompt_for_binary_protocol_message_types(char *protocol_name);
 char *construct_response_format_for_binary_protocol_message_types();
 /* for enrich sequence */
