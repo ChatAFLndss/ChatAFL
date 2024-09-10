@@ -1293,7 +1293,9 @@ char *construct_response_format_for_getting_mutable_fields()
                                                 "\"properties\": {"
                                                     "\"hex_dump\": {\"type\": \"string\"},"
                                                     "\"mutable\": {\"type\": \"integer\", \"description\": \"0 is not functions correctly and 1 is functions correctly even if the fields are mutated.\", \"enum\": [0, 1]}"
-                                                "}" // properties
+                                                "}," // properties
+                                                "\"required\": [\"hex_dump\", \"mutable\"],"
+                                                "\"additionalProperties\": false"
                                             "}" // items
                                         "}" // structured_hex_dump_message
                                     "}," // properties
@@ -1301,7 +1303,7 @@ char *construct_response_format_for_getting_mutable_fields()
                                     "\"additionalProperties\": false"
                                 "}," // schema
                             "\"strict\": true"
-                            "}," // json_schema
+                            "}" // json_schema
                         "}"; // type
 
 
