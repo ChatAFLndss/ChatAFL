@@ -96,8 +96,10 @@ char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response
 /* for getting grammars */
 char *construct_prompt_for_getting_splitted_message(char *hex_dump_message_sequence, char *protocol_name);
 char *construct_response_format_for_getting_splitted_message();
+char **get_splitted_message_from_llm_response(char *response, int *size);
 char *construct_prompt_for_getting_mutable_fields(char *hex_dump, char *protocol_name);
 char *construct_response_format_for_getting_mutable_fields();
+char *get_binary_message_pattern_from_llm_response(char *response);
 /* for getting client message types (methods) */
 char *construct_prompt_for_binary_protocol_message_types(char *protocol_name);
 char *construct_response_format_for_binary_protocol_message_types();

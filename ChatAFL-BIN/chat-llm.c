@@ -1306,7 +1306,6 @@ char *construct_response_format_for_getting_mutable_fields()
                             "}" // json_schema
                         "}"; // type
 
-
     return response_format;
 }
 
@@ -1350,19 +1349,19 @@ char *construct_response_format_for_binary_protocol_message_types()
 
     char *response_format = "{\"type\": \"json_schema\","
                             "\"json_schema\": {"
-                            "\"name\": \"client_request_method_list\","
-                            "\"schema\": {"
-                            "\"type\": \"object\","
-                            "\"properties\": {"
-                            "\"client_request_method\": {"
-                            "\"type\": \"array\","
-                            "\"items\": {\"type\": \"string\"}"
-                            "}" // client_request_method
-                            "}" // properties
-                            "}," // schema
-                            "\"required\": [\"client_request_method\"],"
-                            "\"additionalProperties\": false"
-                            "}" // json_schema
+                                "\"name\": \"client_request_method_list\","
+                                "\"schema\": {"
+                                "\"type\": \"object\","
+                                    "\"properties\": {"
+                                        "\"client_request_method\": {"
+                                            "\"type\": \"array\","
+                                            "\"items\": {\"type\": \"string\"}"
+                                        "}" // client_request_method
+                                    "}" // properties
+                                "}," // schema
+                                "\"required\": [\"client_request_method\"],"
+                                "\"additionalProperties\": false"
+                                "}" // json_schema
                             "\"strict\": true"
                             "}"; // type
 
@@ -1425,6 +1424,53 @@ char *construct_response_format_for_binary_protocol_enrich_sequence()
                             "\"strict\": true"
                             "}" // json_schema
                             "}"; // type
+}
+
+
+char **get_splitted_message_from_llm_response(char *response, int *size)
+{
+    // JSON 객체를 파싱
+    struct json_object *parsed_json;
+    struct json_object *hex_dump_message;
+    
+    parsed_json = json_tokener_parse(response);
+    
+    if (parsed_json == NULL) {
+        printf("Invalid JSON string\n");
+        *size = 0;
+        return NULL;
+    }
+
+    // hex_dump_message 배열 추출
+    if (json_object_object_get_ex(parsed_json, "hex_dump_message", &hex_dump_message)) {
+        int array_len = json_object_array_length(hex_dump_message);
+        *size = array_len;
+
+        // 메모리 할당
+        char **result = malloc(array_len * sizeof(char*));
+        for (int i = 0; i < array_len; i++) {
+            struct json_object *msg = json_object_array_get_idx(hex_dump_message, i);
+            const char *message = json_object_get_string(msg);
+
+            // 문자열 복사 및 할당
+            result[i] = strdup(message);
+        }
+
+        // JSON 객체 해제
+        json_object_put(parsed_json);
+
+        return result;
+    } else {
+        printf("hex_dump_message key not found\n");
+        *size = 0;
+        json_object_put(parsed_json);
+        return NULL;
+    }
+}
+
+char *get_binary_message_pattern_from_llm_response(char *response)
+{
+    return NULL;
 }
 
 // // For debugging
