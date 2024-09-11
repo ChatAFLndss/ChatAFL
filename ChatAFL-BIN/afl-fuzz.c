@@ -433,7 +433,7 @@ u32 reward_grammar;
 // Flag to check binary/text based protocol
 u8 is_binary;
 // Binary patterns generated from Language Model
-klist_t(rang) * binary_protocol_patterns;
+klist_t(bin) * binary_protocol_patterns;
 
 // TODO
 void setup_llm_grammars_binary()
@@ -538,7 +538,7 @@ void setup_llm_grammars_binary()
       {
         int discard;
         kh_put(strSet, message_types_set, message_type, &discard);
-        *kl_pushp(rang, protocol_patterns) = patterns;
+        *kl_pushp(bin, protocol_patterns) = patterns;
       }
 
       json_object_put(header_v);
@@ -673,7 +673,7 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
 {
   range_list best_decomposition;
   kv_init(best_decomposition);
-  kliter_t(rang) * iter_rang;
+  kliter_t(bin) * iter_rang;
   // Find a valid decomposition of the buffer, according to a header pattern
   for (iter_rang = kl_begin(protocol_patterns); iter_rang != kl_end(protocol_patterns); iter_rang = kl_next(iter_rang))
   {
@@ -10885,7 +10885,7 @@ static int check_ep_capability(cap_value_t cap, const char *filename)
 //   if (protocol_selected)
 //   {
 //     protocol_patterns = kl_init(rang);
-//     binary_protocol_patterns = kl_init(rang);
+//     binary_protocol_patterns = kl_init(bin);
 //     message_types_set = kh_init(strSet);
 
 //     if (is_binary) {
@@ -11332,7 +11332,7 @@ int main(int argc, char **argv)
       }
 
   // TEST - Structured Outputs
-  char * file_path = "/home/jongmunyang/jongmun/jolp/ChatAFL-upgrade/benchmark/subjects/DNS/Dnsmasq/in-dns/dns_queries.raw";
+  char * file_path = "/home/jongmunyang/jongmun/jolp/ChatAFL-upgrade/benchmark/subjects/DTLS/TinyDTLS/in-dtls/ecc_handshake_client.raw";
   char * bin_sequence = read_file_as_hex_string(file_path);
   printf("===================== Total Message Sequence =====================\n%s\n\n", bin_sequence);
 
@@ -11355,8 +11355,8 @@ int main(int argc, char **argv)
 
   // For mutated features
   char * structured_message = NULL;
-  for (int i = 0; i < 5; i ++) {
-    structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(hexdump_message[i], protocol_name),
+  for (int i = 0; i < size; i ++) {
+    structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(result[i], protocol_name),
                                                           "gpt-4o-mini",
                                                            construct_response_format_for_getting_mutable_fields(),
                                                            1,
@@ -11366,7 +11366,6 @@ int main(int argc, char **argv)
 
   // Free allocated memory - splitted messages
   if (result != NULL) {
-      printf("hex_dump_message list:\n");
       for (int i = 0; i < size; i++) {
           free(result[i]); // 할당된 메모리 해제
       }
@@ -11376,7 +11375,7 @@ int main(int argc, char **argv)
   // if (protocol_selected)
   // {
   //   protocol_patterns = kl_init(rang);
-  //   binary_protocol_patterns = kl_init(rang);
+  //   binary_protocol_patterns = kl_init(bin);
   //   message_types_set = kh_init(strSet);
 
   //   if (is_binary) {
