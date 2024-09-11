@@ -11352,34 +11352,26 @@ int main(int argc, char **argv)
       // result 배열의 모든 요소 출력
       printf("Message %d: %s\n", i + 1, result[i]);
   }
+
+  // For mutated features
+  char * structured_message = NULL;
+  for (int i = 0; i < 5; i ++) {
+    structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(hexdump_message[i], protocol_name),
+                                                          "gpt-4o-mini",
+                                                           construct_response_format_for_getting_mutable_fields(),
+                                                           1,
+                                                           0.5);
+    printf("===================== Structured Message %d =====================\n%s\n\n", i, structured_message);
+  }
+
+  // Free allocated memory - splitted messages
   if (result != NULL) {
       printf("hex_dump_message list:\n");
       for (int i = 0; i < size; i++) {
-          printf("%s\n", result[i]);
           free(result[i]); // 할당된 메모리 해제
       }
       free(result); // 결과 배열 자체 메모리 해제
   }
-  printf("===================== Splitted Message Sequence =====================\n%s\n\n", splitted_message);
-  
-
-  // For mutated features
-  // char *hexdump_message[]={"16 fe fd 00 00 00 00 00 00 00 00 00 52 01 00 00 46 00 00 00 00 00 00 00 46 fe fd 00 00 00 00 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 00 00 00 02 c0 ae 01 00 00 1a 00 13 00 02 01 02 00 14 00 02 01 02 00 0a 00 04 00 02 00 17 00 0b 00 02 01 00", 
-  //                         "16 fe fd 00 00 00 00 00 00 00 01 00 62 01 00 00 56 00 01 00 00 00 00 00 56 fe fd 00 00 00 00 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 00 10 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 00 02 c0 ae 01 00 00 1a 00 13 00 02 01 02 00 14 00 02 01 02 00 0a 00 04 00 02 00 17 00 0b 00 02 01 00", 
-  //                         "16 fe fd 00 00 00 00 00 00 00 02 00 6a 0b 00 00 5e 00 02 00 00 00 00 00 5e 00 00 5b 30 59 30 13 06 07 2a 86 48 ce 3d 02 01 06 08 2a 86 48 ce 3d 03 01 07 03 42 00 04 d0 55 ee 14 08 4d 6e 06 15 59 9d b5 83 91 3e 4a 3e 45 26 a2 70 4d 61 f2 7a 4c cf ba 97 58 ef 9a b4 18 b6 4a fe 80 30 da 1d dc f4 f4 2e 2f 26 31 d0 43 b1 fb 03 e2 2f 4d 17 de 43 f9 f9 ad ee 70", 
-  //                         "16 fe fd 00 00 00 00 00 00 00 03 00 4e 10 00 00 42 00 03 00 00 00 00 00 42 41 04 6f f0 3b 94 92 41 ce 1d ad d4 35 19 e6 96 0e 0a 85 b4 1a 69 a0 5c 32 81 03 aa 2b ce 15 94 ca 16 3c 4f 75 3a 55 bf 01 dc 53 f6 c0 b0 c7 ee e7 8b 40 c6 ff 7d 25 a9 6e 22 82 b9 89 ce f7 1c 14 4a", 
-  //                         "16 fe fd 00 00 00 00 00 00 00 04 00 56 0f 00 00 4a 00 04 00 00 00 00 00 4a 04 03 00 46 30 44 02 20 6f f0 3b 94 92 41 ce 1d ad d4 35 19 e6 96 0e 0a 85 b4 1a 69 a0 5c 32 81 03 aa 2b ce 15 94 ca 16 02 20 60 3e a0 37 c7 57 da 55 cc dd c2 ca fd 63 65 7c dc af 00 a0 42 f3 20 5a 2b 8f 4f 00 8b d9 09 89", 
-  //                         "14 fe fd 00 00 00 00 00 00 00 05 00 01 01 16 fe fd 00 01 00 00 00 00 00 00 00 28 00 01 00 00 00 00 00 00 57 c7 06 20 2f f5 06 29 58 df 7e b3 19 5c 40 bd 98 62 1a 62 83 be ae 17 40 c8 2b 57 8a 56 4c fe"
-  //                         };
-  // char * structured_message = NULL;
-  // for (int i = 0; i < 5; i ++) {
-  //   structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(hexdump_message[i], protocol_name),
-  //                                                         "gpt-4o-mini",
-  //                                                          construct_response_format_for_getting_mutable_fields(),
-  //                                                          1,
-  //                                                          0.5);
-  //   printf("===================== Structured Message %d =====================\n%s\n\n", i, structured_message);
-  // }
 
   // if (protocol_selected)
   // {
