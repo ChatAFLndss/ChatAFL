@@ -1424,6 +1424,8 @@ char *construct_response_format_for_binary_protocol_enrich_sequence()
                             "\"strict\": true"
                             "}" // json_schema
                             "}"; // type
+
+    return response_format;
 }
 
 
@@ -1468,8 +1470,81 @@ char **get_splitted_message_from_llm_response(char *response, int *size)
     }
 }
 
-char *get_binary_message_pattern_from_llm_response(char *response)
+pcre2_code *get_binary_message_pattern_from_llm_response(char *response)
 {
+    typedef struct {
+        char *hex_dump;
+        int is_mutable;
+    } StructuredHexDump;
+
+    // Make response to json_object
+    json_object *parsed_response = json_tokener_parse(response);
+    if (parsed_response == NULL) {
+        printf("Failed to parse JSON\n");
+        return NULL;
+    }
+
+    // Get structured_hex_dump list
+    json_object *structured_hex_dump = NULL;
+    if (!json_object_object_get_ex(parsed_response, "structured_hex_dump_message", &structured_hex_dump)) {
+        printf("Invalid JSON format\n");
+        json_object_put(parsed_response); // Free memory
+        return NULL;
+    }
+    // Get length of structured_hex_dump
+    int n_items = json_object_array_length(structured_hex_dump);
+    int mutable_items = 0;
+    StructuredHexDump *struct_list = (StructuredHexDump *)malloc(sizeof(StructuredHexDump) * n_items);
+
+    // Get hex_dump and mutable fields
+    for (int i = 0; i < n_items; i++) {
+        // Get hex dump object from structured_hex_dump at index i.
+        json_object *hex_obj = json_object_array_get_idx(structured_hex_dump, i);
+
+        json_object *hex_dump = NULL;
+        json_object *mutable_flag = NULL;
+
+        // Get hex_dump field
+        if (!json_object_object_get_ex(hex_obj, "hex_dump", &hex_dump)) {
+            printf("Missing hex_dump field\n");
+            continue;
+        }
+        // Get mutable field
+        if (!json_object_object_get_ex(hex_obj, "mutable", &mutable_flag)) {
+            printf("Missing mutable field\n");
+            continue;
+        }
+
+        int is_mutable = json_object_get_int(mutable_flag);
+        if (is_mutable) { mutable_items++; }
+
+        struct_list[i].hex_dump = json_object_get_string(hex_dump);
+        struct_list[i].is_mutable = is_mutable;
+    }
+
+    // Make pattern from struct_list
+    for (int it = 0; it < mutable_items; it++) {
+        int mutable_flag = 1;
+        char pattern[1024] = {0};
+        strcat(pattern, "(?:");
+        for (int i = 0; i < n_items; i++) {
+            if (struct_list[i].is_mutable && mutable_flag) {
+                strcat(pattern, "(.*)");
+                struct_list[i].is_mutable = 0;
+            }
+            else {
+                strcat(pattern, struct_list[i].hex_dump);
+            }
+        }
+        strcat(pattern, ")");
+        // Debug
+        printf("Pattern - %d: %s", it, pattern);
+    }
+
+    // Free memory
+    free(struct_list);
+    json_object_put(parsed_response);
+
     return NULL;
 }
 

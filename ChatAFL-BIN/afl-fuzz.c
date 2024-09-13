@@ -11362,6 +11362,8 @@ int main(int argc, char **argv)
                                                            1,
                                                            0.5);
     printf("===================== Structured Message %d =====================\n%s\n\n", i, structured_message);
+  
+    get_binary_message_pattern_from_llm_response(structured_message);
   }
 
   // Free allocated memory - splitted messages
