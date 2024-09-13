@@ -433,7 +433,7 @@ u32 reward_grammar;
 // Flag to check binary/text based protocol
 u8 is_binary;
 // Binary patterns generated from Language Model
-klist_t(bin) * binary_protocol_patterns;
+klist_t(rang) * binary_protocol_patterns;
 
 // TODO
 void setup_llm_grammars_binary()
@@ -538,7 +538,7 @@ void setup_llm_grammars_binary()
       {
         int discard;
         kh_put(strSet, message_types_set, message_type, &discard);
-        *kl_pushp(bin, protocol_patterns) = patterns;
+        *kl_pushp(rang, protocol_patterns) = patterns;
       }
 
       json_object_put(header_v);
@@ -673,7 +673,7 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
 {
   range_list best_decomposition;
   kv_init(best_decomposition);
-  kliter_t(bin) * iter_rang;
+  kliter_t(rang) * iter_rang;
   // Find a valid decomposition of the buffer, according to a header pattern
   for (iter_rang = kl_begin(protocol_patterns); iter_rang != kl_end(protocol_patterns); iter_rang = kl_next(iter_rang))
   {
@@ -10885,7 +10885,7 @@ static int check_ep_capability(cap_value_t cap, const char *filename)
 //   if (protocol_selected)
 //   {
 //     protocol_patterns = kl_init(rang);
-//     binary_protocol_patterns = kl_init(bin);
+//     binary_protocol_patterns = kl_init(rang);
 //     message_types_set = kh_init(strSet);
 
 //     if (is_binary) {
@@ -11377,7 +11377,7 @@ int main(int argc, char **argv)
   // if (protocol_selected)
   // {
   //   protocol_patterns = kl_init(rang);
-  //   binary_protocol_patterns = kl_init(bin);
+  //   binary_protocol_patterns = kl_init(rang);
   //   message_types_set = kh_init(strSet);
 
   //   if (is_binary) {
