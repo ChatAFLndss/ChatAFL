@@ -27,3 +27,5 @@ benchmark/subjects/*/*/chatafl
 benchmark/subjects/*/*/chatafl-cl1
 benchmark/subjects/*/*/chatafl-cl2
 benchmark/subjects/*/*/aflnet
+
+.vscode
