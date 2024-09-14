@@ -11396,6 +11396,7 @@ int main(int argc, char **argv)
   //   }
   // }
 
+  printf("iter--\n");
   // DEBUG
   kliter_t(rang) * iter_rang;
   // Find a valid decomposition of the buffer, according to a header pattern

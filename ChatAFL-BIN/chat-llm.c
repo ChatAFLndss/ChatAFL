@@ -433,8 +433,6 @@ int parse_pattern(pcre2_code *replacer, pcre2_match_data *match_data, const char
 
     if (rc == 4)
     { // matched the first option - there is a spec
-    
-    ial value
         strncat(pattern, str + ovector[2], ovector[3] - ovector[2]);
         // offset += ovector[3] - ovector[2];
 
