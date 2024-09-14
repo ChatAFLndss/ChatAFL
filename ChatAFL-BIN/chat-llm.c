@@ -432,7 +432,9 @@ int parse_pattern(pcre2_code *replacer, pcre2_match_data *match_data, const char
     // }
 
     if (rc == 4)
-    { // matched the first option - there is a special value
+    { // matched the first option - there is a spec
+    
+    ial value
         strncat(pattern, str + ovector[2], ovector[3] - ovector[2]);
         // offset += ovector[3] - ovector[2];
 
@@ -992,8 +994,8 @@ char *read_file_as_hex_string(const char *file_path) {
 
     unsigned char byte;
     while (fread(&byte, 1, 1, file) == 1) {
-        // Resize buffer to hold the new hex byte and a space
-        buffer_size += 3;  // 2 chars for hex + 1 for space
+        // Resize buffer to hold the new hex byte (2 characters) without space
+        buffer_size += 2;  // 2 chars for hex (no space)
         hex_output = (char *)realloc(hex_output, buffer_size);
         if (hex_output == NULL) {
             printf("An error occurred: Memory reallocation failed.\n");
@@ -1001,39 +1003,42 @@ char *read_file_as_hex_string(const char *file_path) {
             return NULL;
         }
 
-        // Append the hex representation to the output string
-        sprintf(hex_output + index, "%02x ", byte);
-        index += 3;
-    }
-
-    // Trim the last space
-    if (index > 0) {
-        hex_output[index - 1] = '\0';
+        // Append the hex representation to the output string without space
+        sprintf(hex_output + index, "%02x", byte);
+        index += 2;
     }
 
     fclose(file);
     return hex_output;
 }
 
+
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name) {
-    // 공백을 기준으로 바이트 시퀀스를 분리하기 위한 버퍼
-    char byte_str[3];
-    byte_str[2] = '\0'; // null-terminate the string
+    // 공백 없는 16진수 문자열의 길이 계산
     size_t length = strlen(byte_sequence);
 
-    // 저장할 바이트의 수 계산
-    size_t num_bytes = (length + 1) / 3; // "XX " 패턴으로 되어 있으므로, 3바이트마다 1바이트 데이터가 생성됨
+    // 16진수 문자열의 길이는 짝수여야 함
+    if (length % 2 != 0) {
+        fprintf(stderr, "Invalid byte sequence length.\n");
+        return;
+    }
+
+    // 저장할 바이트 수 계산 (두 자리 16진수 = 1바이트)
+    size_t num_bytes = length / 2;
 
     // 바이트 배열을 할당
     unsigned char *byte_values = (unsigned char*)malloc(num_bytes);
     if (byte_values == NULL) {
-        fprintf(stderr, "메모리 할당 실패\n");
+        fprintf(stderr, "Memory allocation failed\n");
         return;
     }
 
-    // 바이트 시퀀스를 실제 바이트 값으로 변환
+    // 16진수 문자열을 실제 바이트 값으로 변환
+    char byte_str[3];  // 두 자리의 16진수 값을 저장할 공간 (null terminator 포함)
+    byte_str[2] = '\0';  // null-terminate the string
+
     size_t byte_index = 0;
-    for (size_t i = 0; i < length; i += 3) {
+    for (size_t i = 0; i < length; i += 2) {
         // 두 개의 16진수 문자를 추출
         byte_str[0] = byte_sequence[i];
         byte_str[1] = byte_sequence[i + 1];
@@ -1045,18 +1050,19 @@ void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name
     // 바이너리 파일로 저장
     FILE *binary_file = fopen(file_name, "wb");
     if (binary_file == NULL) {
-        fprintf(stderr, "파일 열기 실패: %s\n", file_name);
+        fprintf(stderr, "File open failed: %s\n", file_name);
         free(byte_values);
         return;
     }
     fwrite(byte_values, 1, num_bytes, binary_file);
     fclose(binary_file);
 
-    printf("%s 파일로 저장되었습니다.\n", file_name);
+    printf("%s file saved.\n", file_name);
 
     // 메모리 해제
     free(byte_values);
 }
+
 
 char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature) 
 {
@@ -1470,7 +1476,7 @@ char **get_splitted_message_from_llm_response(char *response, int *size)
     }
 }
 
-pcre2_code *get_binary_message_pattern_from_llm_response(char *response)
+pcre2_code **get_binary_message_pattern_from_llm_response(char *response, int *size)
 {
     typedef struct {
         char *hex_dump;
@@ -1522,15 +1528,18 @@ pcre2_code *get_binary_message_pattern_from_llm_response(char *response)
         struct_list[i].is_mutable = is_mutable;
     }
 
+    pcre2_code **pattern_list = ck_alloc(mutable_items * sizeof(pcre2_code *));
+
     // Make pattern from struct_list
     for (int it = 0; it < mutable_items; it++) {
         int mutable_flag = 1;
-        char pattern[1024] = {0};
+        char pattern[2048] = {0};
         strcat(pattern, "(?:");
         for (int i = 0; i < n_items; i++) {
             if (struct_list[i].is_mutable && mutable_flag) {
                 strcat(pattern, "(.*)");
                 struct_list[i].is_mutable = 0;
+                mutable_flag = 0;
             }
             else {
                 strcat(pattern, struct_list[i].hex_dump);
@@ -1538,14 +1547,22 @@ pcre2_code *get_binary_message_pattern_from_llm_response(char *response)
         }
         strcat(pattern, ")");
         // Debug
-        printf("Pattern - %d: %s", it, pattern);
+        printf("Pattern - %d: %s\n", it, pattern);
+
+        // Compile pattern
+        int errornumber;
+        size_t erroroffset;
+        pcre2_code *p = pcre2_compile(pattern, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
+        pcre2_jit_compile(p, PCRE2_JIT_COMPLETE);
+        pattern_list[it] = p;
     }
 
+    *size = mutable_items;
     // Free memory
     free(struct_list);
     json_object_put(parsed_response);
 
-    return NULL;
+    return pattern_list;
 }
 
 // // For debugging

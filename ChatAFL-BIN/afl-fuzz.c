@@ -11363,7 +11363,13 @@ int main(int argc, char **argv)
                                                            0.5);
     printf("===================== Structured Message %d =====================\n%s\n\n", i, structured_message);
   
-    get_binary_message_pattern_from_llm_response(structured_message);
+    int len;
+    pcre2_code **list = get_binary_message_pattern_from_llm_response(structured_message, &len);
+
+    printf("pcre2_code list length: %d\n", len);
+    for (int i = 0; i < len; i++) {
+      *kl_pushp(rang, binary_protocol_patterns) = list[i];
+    }
   }
 
   // Free allocated memory - splitted messages
@@ -11391,20 +11397,14 @@ int main(int argc, char **argv)
   // }
 
   // DEBUG
-  // kliter_t(rang) * iter_rang;
-  // // Find a valid decomposition of the buffer, according to a header pattern
-  // for (iter_rang = kl_begin(protocol_patterns); iter_rang != kl_end(protocol_patterns); iter_rang = kl_next(iter_rang))
-  // {
-  //   pcre2_code **patterns = kl_val(iter_rang);
-  //   pcre2_code *header_pattern = patterns[0];
-  //   pcre2_code *fields_pattern = patterns[1];
+  kliter_t(rang) * iter_rang;
+  // Find a valid decomposition of the buffer, according to a header pattern
+  for (iter_rang = kl_begin(binary_protocol_patterns); iter_rang != kl_end(binary_protocol_patterns); iter_rang = kl_next(iter_rang))
+  {
+    pcre2_code *patterns = kl_val(iter_rang);
 
-  //   printf("Patterns: %p\n", (void *)patterns);
-  //   printf("header_pattern: %p\n", (void *)header_pattern);
-  //   printf("fields_pattern: %p\n", (void *)fields_pattern);
-
-  //   if(header_pattern == NULL || fields_pattern == NULL) continue;
-  // }
+    printf("Patterns: %p\n", (void *)patterns);
+  }
 
   // printf("protocol_name: %s\n", protocol_name);
 
