@@ -11353,6 +11353,7 @@ int main(int argc, char **argv)
       printf("Message %d: %s\n", i + 1, result[i]);
   }
 
+  binary_protocol_patterns = kl_init(rang);
   // For mutated features
   char * structured_message = NULL;
   for (int i = 0; i < size; i ++) {
