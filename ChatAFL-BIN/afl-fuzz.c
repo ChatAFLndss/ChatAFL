@@ -441,115 +441,99 @@ void setup_llm_grammars_binary()
 
   ACTF("Getting grammars from LLM...");
 
-  khash_t(consistency_table) *const_table = kh_init(consistency_table);
-  char *first_question;
-  char *templates_prompt = construct_prompt_for_templates(protocol_name, &first_question);
-
-  for (int iter = 0; iter < TEMPLATE_CONSISTENCY_COUNT; iter++)
+  struct dirent **nl_files;
+  int nl_cnt = scandir(in_dir, &nl_files, NULL, alphasort);
+  if (nl_cnt < 0)
   {
-    klist_t(gram) *grammar_list = kl_init(gram);
+    printf("Error in reading the directory %s\n", in_dir);
+    exit(1);
+  }
 
-    char *templates_answer = chat_with_llm(templates_prompt, "turbo", GRAMMAR_RETRIES, 0.5);
-    if (templates_answer == NULL)
-      goto free_templates_answer;
-
-    // printf("## Answer from LLM:\n %s\n", templates_answer);
-    char *remaining_prompt = construct_prompt_for_remaining_templates(protocol_name, first_question, templates_answer);
-    // printf("remaining prompt is:\n %s\n", remaining_prompt);
-    char *remaining_templates = chat_with_llm(remaining_prompt, "turbo", GRAMMAR_RETRIES, 0.5);
-    if (remaining_templates == NULL)
-      goto free_remaining;
-
-    // printf("## Remaining templates:\n %s\n", remaining_templates);
-
-    char *combined_templates = NULL;
-    asprintf(&combined_templates, "%s\n%s", templates_answer, remaining_templates);
-
-    char *grammar_output_path = alloc_printf("%s/protocol-grammars/llm-grammar-output-%d", out_dir, iter);
-    int grammar_output_fd = open(grammar_output_path, O_WRONLY | O_CREAT, 0600);
-
-    ck_write(grammar_output_fd, combined_templates, strlen(combined_templates), grammar_output_path);
-
-    close(grammar_output_fd);
-    ck_free(grammar_output_path);
-
-    extract_message_grammars(combined_templates, grammar_list);
-
-    kliter_t(gram) * iter;
-    for (iter = kl_begin(grammar_list); iter != kl_end(grammar_list); iter = kl_next(iter))
+  // traverse the directory to extract pattern from the files
+  for (int i = 0; i < nl_cnt; i++)
+  {
+    char *nl_file_name = nl_files[i]->d_name;
+    // skip the . and .. files and files whose name includes "enriched"
+    if (strcmp(nl_file_name, ".") == 0 || strcmp(nl_file_name, "..") == 0 || strstr(nl_file_name, "enriched") != NULL)
     {
-      json_object *jobj = kl_val(iter);
+      continue;
+    }
+    char *nl_file_path = malloc(strlen(in_dir) + strlen(nl_file_name) + 2);
+    strcpy(nl_file_path, in_dir);
+    strcat(nl_file_path, "/");
+    strcat(nl_file_path, nl_file_name);
+    printf("## File path: %s\n", nl_file_path);
 
-      json_object *header = json_object_array_get_idx(jobj, 0);
+    int old_size = 0;
+    int new_size = 0;
+    char **old_message_list = NULL;
+    // Perform message sequence seperation into individual messages for each file
+    for (int iter = 0; iter < BIN_TEMPLATE_CONSISTENCY_COUNT; iter++)
+    {
+      char *bin_sequence = read_file_as_hex_string(nl_file_path);
+      char *splitted_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_splitted_message(bin_sequence, protocol_name),
+                                                                "gpt-4o-mini",
+                                                                construct_response_format_for_getting_splitted_message(),
+                                                                1, 
+                                                                0.5);
+      printf("Splitted Message Sequence - %d: %s\n\n", iter, splitted_message);
 
-      int absent;
-
-      const char *header_str = json_object_get_string(header);
-
-      khiter_t k = kh_put(consistency_table, const_table, header_str, &absent);
-      if (absent)
-      {
-        khash_t(field_table) *field_table = kh_init(field_table);
-        kh_value(const_table, k) = field_table;
+      char **new_message_list = get_splitted_message_from_llm_response(splitted_message, &new_size);
+      if (old_size == 0) {
+        old_size = new_size;
+        old_message_list = new_message_list;
       }
-
-      for (int i = 1; i < json_object_array_length(jobj); i++)
-      {
-        const char *v = json_object_get_string(json_object_array_get_idx(jobj, i));
-        khash_t(field_table) *field_table = kh_value(const_table, k);
-        khiter_t field_k = kh_put(field_table, field_table, v, &absent);
-        if (absent)
-        {
-          kh_value(field_table, field_k) = 0;
+      else if (new_size > old_size) {
+        // Free old_message_list
+        if (old_message_list != NULL) {
+          for (int i = 0; i < old_size; i++) {
+              free(old_message_list[i]);
+          }
+          free(old_message_list);
         }
-        kh_value(field_table, field_k)++;
+        
+        old_size = new_size;
+        old_message_list = new_message_list;
+      }
+      else {
+        // Free new_message_list
+        if (new_message_list != NULL) {
+          for (int i = 0; i < new_size; i++) {
+              free(new_message_list[i]);
+          }
+          free(new_message_list);
+        }
       }
     }
-    kl_destroy_gram(grammar_list);
 
-    free(combined_templates);
-    free(remaining_templates);
+    // Extract pattern from structured message
+    char *structured_message = NULL;
+    for (int iter = 0; i < old_size; i++) {
+      structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(result[i], protocol_name),
+                                                            "gpt-4o-mini",
+                                                            construct_response_format_for_getting_mutable_fields(),
+                                                            1,
+                                                            0.5);
+      printf("Structured message - %d: %s\n\n", iter, structured_message);
 
-  free_remaining:
-    free(remaining_prompt);
-
-  free_templates_answer:
-    free(templates_answer);
-  }
-
-  int pattern_index = 0;
-  for (khiter_t con_t_iter = kh_begin(const_table); con_t_iter != kh_end(const_table); ++con_t_iter)
-  {
-    if (kh_exist(const_table, con_t_iter))
-    {
-      pcre2_code **patterns = ck_alloc(2 * sizeof(pcre2_code *));
-
-      khash_t(field_table) *field_table = kh_value(const_table, con_t_iter);
-
-      json_object *header_v = json_object_new_string(kh_key(const_table, con_t_iter));
-      const char *header_str = json_object_to_json_string(header_v);
-
-      char *pattern_path = alloc_printf("%s/protocol-grammars/pattern-%d", out_dir, pattern_index);
-      pattern_index++;
-      int pattern_fd = open(pattern_path, O_WRONLY | O_CREAT, 0600);
-
-      char *message_type = extract_message_pattern(header_str, field_table, patterns, pattern_fd, pattern_path);
-      if (message_type != NULL)
-      {
-        int discard;
-        kh_put(strSet, message_types_set, message_type, &discard);
-        *kl_pushp(rang, protocol_patterns) = patterns;
-      }
-
-      json_object_put(header_v);
-      close(pattern_fd);
-      ck_free(pattern_path);
-
+      int len;
+      pcre2_code **pattern_list = get_binary_message_pattern_from_llm_response(structured_message, &len);
+      // Push compiled patterns into k_list binary_protocol_pattern.
+      for (int i = 0; i < len; i++) {
+        *kl_pushp(rang, binary_protocol_patterns) = pattern_list[i];
+      } 
     }
-  }
 
-  free(first_question);
-  free(templates_prompt);
+    // Free old_message_list
+    if (old_message_list != NULL) {
+      for (int i = 0; i < old_size; i++) {
+          free(old_message_list[i]);
+      }
+      free(old_message_list);
+    }
+
+    free(nl_file_path);
+  }
 }
 
 void setup_llm_grammars()
@@ -675,9 +659,9 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
   kv_init(best_decomposition);
   kliter_t(rang) * iter_rang;
   // Find a valid decomposition of the buffer, according to a header pattern
-  for (iter_rang = kl_begin(protocol_patterns); iter_rang != kl_end(protocol_patterns); iter_rang = kl_next(iter_rang))
+  for (iter_rang = kl_begin(binary_protocol_patterns); iter_rang != kl_end(binary_protocol_patterns); iter_rang = kl_next(iter_rang))
   {
-    pcre2_code **patterns = kl_val(iter_rang);
+    pcre2_code *pattern = kl_val(iter_rang);
     pcre2_code *header_pattern = patterns[0];
     pcre2_code *fields_pattern = patterns[1];
 
@@ -11332,72 +11316,71 @@ int main(int argc, char **argv)
       }
 
   // TEST - Structured Outputs
-  char * file_path = "/home/jongmunyang/jongmun/jolp/ChatAFL-upgrade/benchmark/subjects/DTLS/TinyDTLS/in-dtls/ecc_handshake_client.raw";
-  char * bin_sequence = read_file_as_hex_string(file_path);
-  printf("===================== Total Message Sequence =====================\n%s\n\n", bin_sequence);
+  // char * file_path = "/home/jongmunyang/jongmun/jolp/ChatAFL-upgrade/benchmark/subjects/DTLS/TinyDTLS/in-dtls/ecc_handshake_client.raw";
+  // char * bin_sequence = read_file_as_hex_string(file_path);
+  // printf("===================== Total Message Sequence =====================\n%s\n\n", bin_sequence);
 
 
-  // For splitting messages
-  char * splitted_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_splitted_message(bin_sequence, protocol_name),
-                                                              "gpt-4o-mini",
-                                                              construct_response_format_for_getting_splitted_message(),
-                                                              1, 
-                                                              0.5);
-  printf("===================== Total Splitted Message Sequence =====================\n%s\n\n", splitted_message);
+  // // For splitting messages
+  // char * splitted_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_splitted_message(bin_sequence, protocol_name),
+  //                                                             "gpt-4o-mini",
+  //                                                             construct_response_format_for_getting_splitted_message(),
+  //                                                             1, 
+  //                                                             0.5);
+  // printf("===================== Total Splitted Message Sequence =====================\n%s\n\n", splitted_message);
   
-  int size;
-  char ** result = get_splitted_message_from_llm_response(splitted_message, &size);
-  printf("hex_dump_message list:\n");
-  for (int i = 0; i < size; i++) {
-      // result 배열의 모든 요소 출력
-      printf("Message %d: %s\n", i + 1, result[i]);
-  }
+  // int size;
+  // char ** result = get_splitted_message_from_llm_response(splitted_message, &size);
+  // printf("hex_dump_message list:\n");
+  // for (int i = 0; i < size; i++) {
+  //     // result 배열의 모든 요소 출력
+  //     printf("Message %d: %s\n", i + 1, result[i]);
+  // }
 
-  binary_protocol_patterns = kl_init(rang);
-  // For mutated features
-  char * structured_message = NULL;
-  for (int i = 0; i < size; i ++) {
-    structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(result[i], protocol_name),
-                                                          "gpt-4o-mini",
-                                                           construct_response_format_for_getting_mutable_fields(),
-                                                           1,
-                                                           0.5);
-    printf("===================== Structured Message %d =====================\n%s\n\n", i, structured_message);
+  // binary_protocol_patterns = kl_init(rang);
+  // // For mutated features
+  // char * structured_message = NULL;
+  // for (int i = 0; i < size; i ++) {
+  //   structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(result[i], protocol_name),
+  //                                                         "gpt-4o-mini",
+  //                                                          construct_response_format_for_getting_mutable_fields(),
+  //                                                          1,
+  //                                                          0.5);
+  //   printf("===================== Structured Message %d =====================\n%s\n\n", i, structured_message);
   
-    int len;
-    pcre2_code **list = get_binary_message_pattern_from_llm_response(structured_message, &len);
+  //   int len;
+  //   pcre2_code **list = get_binary_message_pattern_from_llm_response(structured_message, &len);
 
-    printf("pcre2_code list length: %d\n", len);
-    for (int i = 0; i < len; i++) {
-      *kl_pushp(rang, binary_protocol_patterns) = list[i];
-    }
-  }
-
-  // Free allocated memory - splitted messages
-  if (result != NULL) {
-      for (int i = 0; i < size; i++) {
-          free(result[i]); // 할당된 메모리 해제
-      }
-      free(result); // 결과 배열 자체 메모리 해제
-  }
-
-  // if (protocol_selected)
-  // {
-  //   protocol_patterns = kl_init(rang);
-  //   binary_protocol_patterns = kl_init(rang);
-  //   message_types_set = kh_init(strSet);
-
-  //   if (is_binary) {
-  //     // enrich_binary_testcases();
-  //     setup_llm_grammars_binary();
-  //   }
-  //   else {
-  //     setup_llm_grammars();
-  //     // enrich_testcases();
+  //   printf("pcre2_code list length: %d\n", len);
+  //   for (int i = 0; i < len; i++) {
+  //     *kl_pushp(rang, binary_protocol_patterns) = list[i];
   //   }
   // }
 
-  printf("iter--\n");
+  // // Free allocated memory - splitted messages
+  // if (result != NULL) {
+  //     for (int i = 0; i < size; i++) {
+  //         free(result[i]); // 할당된 메모리 해제
+  //     }
+  //     free(result); // 결과 배열 자체 메모리 해제
+  // }
+
+  if (protocol_selected)
+  {
+    protocol_patterns = kl_init(rang);
+    binary_protocol_patterns = kl_init(rang);
+    message_types_set = kh_init(strSet);
+
+    if (is_binary) {
+      // enrich_binary_testcases();
+      setup_llm_grammars_binary();
+    }
+    else {
+      setup_llm_grammars();
+      // enrich_testcases();
+    }
+  }
+
   // DEBUG
   kliter_t(rang) * iter_rang;
   // Find a valid decomposition of the buffer, according to a header pattern

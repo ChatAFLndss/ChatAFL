@@ -1010,6 +1010,12 @@ char *read_file_as_hex_string(const char *file_path) {
     return hex_output;
 }
 
+char *remove_space(char *string) {
+    char *no_space_string;
+    
+    return no_space_string;
+}
+
 
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name) {
     // 공백 없는 16진수 문자열의 길이 계산

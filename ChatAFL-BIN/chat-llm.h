@@ -20,6 +20,7 @@ Similarly 1700 is for the example request in the seed enrichment
 #define EXAMPLE_SEQUENCE_PROMPT_LENGTH 1700
 
 #define TEMPLATE_CONSISTENCY_COUNT 5
+#define BIN_TEMPLATE_CONSISTENCY_COUNT 5
 
 // Maximum amount of retries for the state stall
 #define STALL_RETRIES 2
@@ -109,5 +110,6 @@ char *construct_response_format_for_binary_protocol_enrich_sequence();
 /* utility */
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name);
 char *read_file_as_hex_string(const char *file_path);
+char *remove_space(char *string);
 
 #endif // __CHAT_LLM_H
