@@ -476,9 +476,13 @@ void setup_llm_grammars_binary()
                                                                 construct_response_format_for_getting_splitted_message(),
                                                                 1, 
                                                                 0.5);
-      printf("Splitted Message Sequence - %d: %s\n\n", iter, splitted_message);
+      printf("Splitted Message Sequence - %d: %s\n\n", iter+1, splitted_message);
 
       char **new_message_list = get_splitted_message_from_llm_response(splitted_message, &new_size);
+      for (int i = 0; i < new_size; i++) {
+        printf("Message %d: %s\n", i + 1, new_message_list[i]);
+      }
+
       if (old_size == 0) {
         old_size = new_size;
         old_message_list = new_message_list;
@@ -509,7 +513,7 @@ void setup_llm_grammars_binary()
     // Extract pattern from structured message
     char *structured_message = NULL;
     for (int iter = 0; i < old_size; i++) {
-      structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(result[i], protocol_name),
+      structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(old_message_list[i], protocol_name),
                                                             "gpt-4o-mini",
                                                             construct_response_format_for_getting_mutable_fields(),
                                                             1,
@@ -657,40 +661,6 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
 {
   range_list best_decomposition;
   kv_init(best_decomposition);
-  kliter_t(rang) * iter_rang;
-  // Find a valid decomposition of the buffer, according to a header pattern
-  for (iter_rang = kl_begin(binary_protocol_patterns); iter_rang != kl_end(binary_protocol_patterns); iter_rang = kl_next(iter_rang))
-  {
-    pcre2_code *pattern = kl_val(iter_rang);
-    pcre2_code *header_pattern = patterns[0];
-    pcre2_code *fields_pattern = patterns[1];
-
-    if(header_pattern == NULL || fields_pattern == NULL) continue;
-
-    range_list header_groups = starts_with(buf, buf_len, header_pattern);
-
-    if (kv_size(header_groups) == 0)
-    {
-      continue;
-    }
-    else
-    {
-      range header_match = kv_pop(header_groups);
-      char *offsetted_line = buf;
-      size_t offsetted_len = buf_len;
-      range_list dyn_ranges = get_mutable_ranges(offsetted_line, offsetted_len, header_match.len, fields_pattern);
-
-      for (int i = 0; i < kv_size(dyn_ranges); i++)
-      {
-        kv_push(range, header_groups, kv_A(dyn_ranges, i));
-      }
-      kv_destroy(dyn_ranges);
-
-      best_decomposition = header_groups;
-
-      break;
-    }
-  }
 
   if (kv_size(best_decomposition) == 0)
   {
