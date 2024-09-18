@@ -512,13 +512,13 @@ void setup_llm_grammars_binary()
 
     // Extract pattern from structured message
     char *structured_message = NULL;
-    for (int iter = 0; i < old_size; i++) {
-      structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(old_message_list[i], protocol_name),
+    for (int it = 0; it < old_size; it++) {
+      structured_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_mutable_fields(old_message_list[it], protocol_name),
                                                             "gpt-4o-mini",
                                                             construct_response_format_for_getting_mutable_fields(),
                                                             1,
                                                             0.5);
-      printf("Structured message - %d: %s\n\n", iter, structured_message);
+      printf("Structured message - %d: %s\n\n", it, structured_message);
 
       int len;
       pcre2_code **pattern_list = get_binary_message_pattern_from_llm_response(structured_message, &len);
@@ -661,7 +661,32 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
 {
   range_list best_decomposition;
   kv_init(best_decomposition);
+  kliter_t(rang) *iter_rang;
 
+  // Find a valid decomposition of the buffer, according to a pattern
+  hexdump_string = get_hexdump_from_buffer(buf, buf_len); 
+  if (hexdump_string == NULL) { FATAL("Hexdump string is NULL.\n"); }
+  
+  for (iter_rang = kl_begin(binary_protocol_patterns); iter_rang != kl_end(binary_protocol_patterns); iter_rang = kl_next(iter_rang)) 
+  {
+    pcre2_code *pattern = kl_val(iter_rang);
+    if (pattern == NULL) continue;
+
+    char *offsetted_line = buf;
+    size_t offsetted_len = buf_len;
+    range_list dyn_ranges = get_mutable_ranges(offsetted_line, offsetted_len, 0, pattern);
+
+    for (int i = 0; i < kv_size(dyn_ranges); i++)
+    {
+      kv_push(range, best_decomposition, kv_A(dyn_ranges, i));
+    }
+    kv_destroy(dyn_ranges);
+
+    break;
+  }
+
+  free(hexdump_string);
+ 
   if (kv_size(best_decomposition) == 0)
   {
     // Graceful degradataion

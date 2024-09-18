@@ -110,6 +110,7 @@ char *construct_response_format_for_binary_protocol_enrich_sequence();
 /* utility */
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name);
 char *read_file_as_hex_string(const char *file_path);
+char *get_hexdump_from_buffer(char *buf, size_t buf_len);
 char *remove_space(char *string);
 
 #endif // __CHAT_LLM_H

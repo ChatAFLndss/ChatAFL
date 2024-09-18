@@ -1012,7 +1012,7 @@ char *read_file_as_hex_string(const char *file_path) {
 
 char *remove_space(char *string) {
     char *no_space_string;
-    
+
     return no_space_string;
 }
 
@@ -1567,6 +1567,25 @@ pcre2_code **get_binary_message_pattern_from_llm_response(char *response, int *s
     json_object_put(parsed_response);
 
     return pattern_list;
+}
+
+char *get_hexdump_from_buffer(char *buf, size_t buf_len) {
+    if (buf == NULL || buf_len == 0) {
+        return NULL;
+    }
+
+    // Each byte will be represented by two hex digits
+    char *hexdump = malloc(buf_len * 2 + 1); // +1 for null terminator
+    if (hexdump == NULL) {
+        return NULL; // Memory allocation failed
+    }
+
+    for (size_t i = 0; i < buf_len; i++) {
+        sprintf(&hexdump[i * 2], "%02x", (unsigned char)buf[i]);
+    }
+    hexdump[buf_len * 2] = '\0'; // Null-terminate the string
+
+    return hexdump;
 }
 
 // // For debugging
