@@ -664,7 +664,7 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
   kliter_t(rang) *iter_rang;
 
   // Find a valid decomposition of the buffer, according to a pattern
-  hexdump_string = get_hexdump_from_buffer(buf, buf_len); 
+  char *hexdump_string = get_hexdump_from_buffer(buf, buf_len); 
   if (hexdump_string == NULL) { FATAL("Hexdump string is NULL.\n"); }
   
   for (iter_rang = kl_begin(binary_protocol_patterns); iter_rang != kl_end(binary_protocol_patterns); iter_rang = kl_next(iter_rang)) 
