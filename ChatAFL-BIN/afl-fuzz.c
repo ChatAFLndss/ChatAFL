@@ -479,6 +479,8 @@ void setup_llm_grammars_binary()
       printf("Splitted Message Sequence - %d: %s\n\n", iter+1, splitted_message);
 
       char **new_message_list = get_splitted_message_from_llm_response(splitted_message, &new_size);
+      if (new_message_list == NULL) { continue; }
+      
       for (int i = 0; i < new_size; i++) {
         printf("Message %d: %s\n", i + 1, new_message_list[i]);
       }
