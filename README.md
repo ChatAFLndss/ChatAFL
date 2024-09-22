@@ -170,6 +170,10 @@ To add an extra subject, we refer to [the instructions, provied by ProfuzzBench]
 
 If the fuzzer terminates with an error, a premature "I am done" message will be displayed. To examine this issue, running `docker logs <containerID>` will display the logs of the failing container.
 
+### 4.5. Working on gpt-4:
+
+We have released a new version of ChatAFL utilizing GPT-4: [gpt4-version](https://github.com/ChatAFLndss/ChatAFL/tree/gpt4-version). However, it hasn't been extensively tested yet. Please feel free to reach out if you encounter any issues during use.
+
 ## 5. Limitations
 
 The current artifact interacts with OpenAI's Large Language Models (`gpt-3.5-turbo-instruct` and `gpt-3.5-turbo`). This puts a third-party limit to the degree of parallelization. The models used in this artifact have a hard limit of 150,000 tokens per minute.
