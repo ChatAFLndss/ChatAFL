@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #export NO_CACHE="--no-cache"
-export MAKE_OPT="-j4"
+export MAKE_OPT="-j32"
 
 cd $PFBENCH
 cd subjects/FTP/LightFTP
