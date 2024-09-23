@@ -1054,7 +1054,7 @@ void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name
 }
 
 
-char *chat_with_llm_structured_outputs(char *prompt, char *model, int tries, float temperature)
+char *chat_with_llm_structured_outputs(char *prompt, char *model, char *response_format, int tries, float temperature)
 {
     CURL *curl;
     CURLcode res = CURLE_OK;
