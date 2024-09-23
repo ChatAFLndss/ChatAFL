@@ -994,14 +994,103 @@ char *read_file_as_hex_string(const char *file_path) {
 
     fclose(file);
     return hex_output;
+
+}
+char *read_file_as_hex_string_using_space(const char *file_path)
+{
+    FILE *file = fopen(file_path, "rb");
+    if (file == NULL) {
+        printf("An error occurred: Could not open file.\n");
+        return NULL;
+    }
+
+    // Allocate an initial buffer
+    size_t buffer_size = 1;  // Start with 1 for the null terminator
+    size_t index = 0;
+    char *hex_output = (char *)malloc(buffer_size);
+    if (hex_output == NULL) {
+        printf("An error occurred: Memory allocation failed.\n");
+        fclose(file);
+        return NULL;
+    }
+    hex_output[0] = '\0';  // Null-terminate the empty string
+
+    unsigned char byte;
+    while (fread(&byte, 1, 1, file) == 1) {
+        // Resize buffer to hold the new hex byte (2 characters) and a space
+        buffer_size += 3;  // 2 chars for hex + 1 for space
+        hex_output = (char *)realloc(hex_output, buffer_size);
+        if (hex_output == NULL) {
+            printf("An error occurred: Memory reallocation failed.\n");
+            fclose(file);
+            return NULL;
+        }
+
+        // Append the hex representation to the output string with space
+        sprintf(hex_output + index, "%02x ", byte);
+        index += 3;  // 2 for hex characters + 1 for space
+    }
+
+    // Remove the trailing space if the string is not empty
+    if (index > 0) {
+        hex_output[index - 1] = '\0';  // Replace the last space with null terminator
+    }
+
+    fclose(file);
+    return hex_output;
 }
 
-char *remove_space(char *string) {
-    char *no_space_string;
+// Helper function for char **remove_space
+char *remove_spaces_from_string(const char *str) {
+    // Allocate enough memory for the new string (without spaces)
+    char *no_space_str = (char *)malloc(strlen(str) + 1);
+    if (no_space_str == NULL) {
+        printf("Memory allocation failed.\n");
+        return NULL;
+    }
 
-    return no_space_string;
+    int index = 0;
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isspace((unsigned char)str[i])) { // Check if the character is not a space
+            no_space_str[index++] = str[i];
+        }
+    }
+    no_space_str[index] = '\0'; // Null-terminate the new string
+
+    return no_space_str;
 }
 
+char **remove_space(char **message_list, int size) 
+{
+    // Allocate memory for the new list of messages without spaces
+    char **space_removed_message_list = (char **)malloc(size * sizeof(char *));
+    if (space_removed_message_list == NULL) {
+        printf("Memory allocation failed.\n");
+        return NULL;
+    }
+
+    // Process each message in the list
+    for (int i = 0; i < size; i++) {
+        space_removed_message_list[i] = remove_spaces_from_string(message_list[i]);
+        if (space_removed_message_list[i] == NULL) {
+            printf("Failed to remove spaces from message %d.\n", i);
+            // Clean up allocated memory in case of failure
+            for (int j = 0; j < i; j++) {
+                free(space_removed_message_list[j]);
+            }
+            free(space_removed_message_list);
+            return NULL;
+        }
+    }
+
+    // Free existing message list
+    for (int i = 0; i < size; i ++) {
+        free(message_list[i]);
+    }
+    free(message_list);
+
+    return space_removed_message_list;
+}
 
 void save_byte_sequence_to_file(const char *byte_sequence, const char *file_name) {
     // 공백 없는 16진수 문자열의 길이 계산
@@ -1180,8 +1269,11 @@ char *construct_response_format_for_getting_splitted_message()
      *                      "type": "string"
      *                  }
      *              }
-     *          }
-     *      }
+     *          },
+     *          "required": ["hex_dump_message"],
+     *          "additionalProperties": false
+     *      },
+     *      "strict": true
      *   }
      * }
      */

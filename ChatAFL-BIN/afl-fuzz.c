@@ -435,7 +435,6 @@ u8 is_binary;
 // Binary patterns generated from Language Model
 klist_t(rang) * binary_protocol_patterns;
 
-// TODO
 void setup_llm_grammars_binary()
 {
 
@@ -470,7 +469,7 @@ void setup_llm_grammars_binary()
     // Perform message sequence seperation into individual messages for each file
     for (int iter = 0; iter < BIN_TEMPLATE_CONSISTENCY_COUNT; iter++)
     {
-      char *bin_sequence = read_file_as_hex_string(nl_file_path);
+      char *bin_sequence = read_file_as_hex_string_using_space(nl_file_path);
       char *splitted_message = chat_with_llm_structured_outputs(construct_prompt_for_getting_splitted_message(bin_sequence, protocol_name),
                                                                 "gpt-4o-mini",
                                                                 construct_response_format_for_getting_splitted_message(),
@@ -479,11 +478,15 @@ void setup_llm_grammars_binary()
       printf("Splitted Message Sequence - %d: %s\n\n", iter+1, splitted_message);
 
       char **new_message_list = get_splitted_message_from_llm_response(splitted_message, &new_size);
+
       if (new_message_list == NULL) { continue; }
       
+      // Debug
       for (int i = 0; i < new_size; i++) {
         printf("Message %d: %s\n", i + 1, new_message_list[i]);
       }
+
+      new_message_list = remove_space(new_message_list, new_size);
 
       if (old_size == 0) {
         old_size = new_size;
