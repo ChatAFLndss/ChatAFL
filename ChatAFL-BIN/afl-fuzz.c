@@ -679,7 +679,7 @@ range_list parse_buffer_binary(char *buf, size_t buf_len)
 
     char *offsetted_line = buf;
     size_t offsetted_len = buf_len;
-    range_list dyn_ranges = get_mutable_ranges(offsetted_line, offsetted_len, 0, pattern);
+    range_list dyn_ranges = get_mutable_ranges_binary(offsetted_line, offsetted_len, 0, pattern);
 
     for (int i = 0; i < kv_size(dyn_ranges); i++)
     {

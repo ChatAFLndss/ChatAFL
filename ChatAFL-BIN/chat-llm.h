@@ -83,6 +83,7 @@ char *format_request_message(char *message);
 
 range_list starts_with(char *line, int length, pcre2_code *pattern);
 range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pattern);
+range_list get_mutable_ranges_binary(char *line, int length, int offset, pcre2_code *pattern);
 void get_protocol_message_types(char *state_prompt, khash_t(strSet) * message_types);
 
 char *enrich_sequence(char* sequence, khash_t(strSet) *missing_message_types);

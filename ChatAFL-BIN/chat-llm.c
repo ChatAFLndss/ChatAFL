@@ -661,6 +661,71 @@ range_list get_mutable_ranges(char *line, int length, int offset, pcre2_code *pa
     return dyn_ranges;
 }
 
+range_list get_mutable_ranges_binary(char *line, int length, int offset, pcre2_code *pattern)
+{
+    pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(pattern, NULL);
+
+    range_list dyn_ranges;
+    kv_init(dyn_ranges);
+
+    for (;;) // catch all the other ranges
+    {
+        int rc = pcre2_match(pattern, line, length, offset, 0, match_data, NULL);
+        if (rc < 0)
+        {
+            switch (rc)
+            {
+            case PCRE2_ERROR_NOMATCH:
+                // printf("No match!\n");
+                break;
+            default:
+                // printf("Matching error %d\n", rc);
+                break;
+            }
+            pcre2_match_data_free(match_data);
+            match_data = NULL;
+            break;
+        }
+        PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+        if (offset != ovector[0])
+        {
+            range v = {.start = offset/2, .len = (ovector[0] - offset)/2, .mutable = 1};
+            kv_push(range, dyn_ranges, v);
+        }
+
+        // printf("Matched over %d %d\n", ovector[0], ovector[1]);
+        for (int i = 1; i < rc; i++)
+        {
+            if (ovector[2 * i] == -1)
+                continue;
+            // printf("Group %d %d %d\n",i, ovector[2 * i], ovector[2 * i + 1]);
+            range v = {.start = ovector[2 * i]/2, .len = (ovector[2 * i + 1] - ovector[2 * i])/2, .mutable = 1};
+            kv_push(range, dyn_ranges, v);
+            // ranges[0][i - 1] = v;
+        }
+        if (offset == ovector[1])
+        { // in the case the match is empty, we just move a step forward
+            offset++;
+        }
+        else
+        {
+            offset = ovector[1];
+        }
+    }
+
+    if (offset < length) // catch anything past the last matched pattern
+    {
+        range v = {.start = offset/2, .len = (length - offset)/2, .mutable = 1};
+        kv_push(range, dyn_ranges, v);
+    }
+
+    if (match_data != NULL)
+    {
+        pcre2_match_data_free(match_data);
+    }
+    return dyn_ranges;
+}
+
 char *unescape_string(const char *input)
 {
     size_t length = strlen(input);
