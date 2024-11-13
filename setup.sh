@@ -13,7 +13,7 @@ done
 
 for y in DICOM/Dcmtk DNS/Dnsmasq DTLS/TinyDTLS SSH/OpenSSH;
 do
-  sed -i "s/ENV OPENAI_API_KEY=\".*\"/ENV OPENAI_API_KEY \"$KEY\"/" benchmark/subjects/$y/Dockerfile
+  sed -i "s/ENV OPENAI_API_KEY=\".*\"/ENV OPENAI_API_KEY=\"$KEY\"/" benchmark/subjects/$y/Dockerfile
 done
 
 # Copy the different versions of ChatAFL to the benchmark directories
