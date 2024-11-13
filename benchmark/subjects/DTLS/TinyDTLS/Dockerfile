@@ -116,3 +116,5 @@ RUN cd $WORKDIR && \
 COPY --chown=ubuntu:ubuntu in-dtls ${WORKDIR}/in-dtls
 COPY --chown=ubuntu:ubuntu cov_script.sh ${WORKDIR}/cov_script
 COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
+COPY --chown=ubuntu:ubuntu enrich_corpus.py ${WORKDIR}/enrich_corpus.py
+COPY --chown=ubuntu:ubuntu utility ${WORKDIR}/utility

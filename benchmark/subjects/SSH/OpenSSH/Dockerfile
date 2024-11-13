@@ -155,4 +155,6 @@ COPY --chown=ubuntu:ubuntu in-ssh ${WORKDIR}/in-ssh
 COPY --chown=ubuntu:ubuntu ssh.dict ${WORKDIR}/ssh.dict
 COPY --chown=ubuntu:ubuntu cov_script.sh ${WORKDIR}/cov_script
 COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
+COPY --chown=ubuntu:ubuntu enrich_corpus.py ${WORKDIR}/enrich_corpus.py
+COPY --chown=ubuntu:ubuntu utility ${WORKDIR}/utility
 
