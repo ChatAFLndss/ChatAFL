@@ -26,6 +26,7 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   if [ $FUZZER = "chatafl-bin"]; then
     pip install pydantic openai
     python3 enrich_corpus.py -o ${WORKDIR}/in-dns -p DNS
+  fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}/src
   timeout -k 2s --preserve-status $TIMEOUT /home/ubuntu/${FUZZER}/afl-fuzz -d -i ${INPUTS} -o $OUTDIR -N udp://127.0.0.1/5353 $OPTIONS ./dnsmasq
