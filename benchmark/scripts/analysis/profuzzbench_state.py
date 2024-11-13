@@ -59,6 +59,7 @@ def main(csv_file, put, runs, cut_off, step, out_file, fuzzers):
   fig, axes = plt.subplots(1, 2, figsize = (10, 20))
   fig.suptitle("State coverage analysis")
 
+  ylim = 0
   for key, grp in mean_df.groupby(['fuzzer', 'data_type']):
     if key[1] == 'nodes':
       axes[0].plot(grp['time'], grp['data'])
@@ -68,7 +69,10 @@ def main(csv_file, put, runs, cut_off, step, out_file, fuzzers):
     if key[1] == 'edges':
       axes[1].plot(grp['time'], grp['data'])
       #axes[1].set_title('Edge coverage over time (%)')
-      axes[1].set_ylim([0,max(grp['data'])+20])
+      if max(grp['data']) > ylim:
+        axes[1].set_ylim([0, max(grp['data'])+20])
+        ylim = max(grp['data']) + 20
+
       axes[1].set_xlabel('Time (in min)')
       axes[1].set_ylabel('#edges')
 
