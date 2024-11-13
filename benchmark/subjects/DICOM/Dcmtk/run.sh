@@ -23,6 +23,9 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   INPUTS=${INPUTS:-${WORKDIR}"/in-dicom"}
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin"]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-dicom -p DICOM
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}/build/bin
   timeout -k 2s --preserve-status $TIMEOUT /home/ubuntu/${FUZZER}/afl-fuzz -d -i ${INPUTS} -o $OUTDIR -N tcp://127.0.0.1/5158 $OPTIONS -c ${WORKDIR}/clean ./dcmqrscp --single-process
