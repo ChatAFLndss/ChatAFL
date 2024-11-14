@@ -385,7 +385,7 @@ def get_modified_structured_message(message, structure, type):
             f"{message}\n"\
             f"```\n"\
             f"If the message byte sequence in the {PROTOCOL} protocol does not match the message type '{type}' format, especially type and length, "\
-            f"please modify this message to conform th the {type} message format according to structure {structure}."
+            f"please modify this message to conform the {type} message format according to structure {structure}."
 
     temperature = 0.5
     completion = client.beta.chat.completions.parse(
@@ -476,7 +476,7 @@ def main():
             byte_sequence += utility.concatenate_values(protocol_structured_messages.get(type))
             byte_sequence += '\n'
         try:
-            utility.save_byte_sequence_to_file(byte_sequence=byte_sequence, file_path=utility.get_byte_sequence_output_path(PROTOCOL))
+            utility.save_byte_sequence_to_file(byte_sequence=byte_sequence, file_path=utility.get_byte_sequence_output_path(PROTOCOL, OUTPUT))
         except Exception as e:
             print(f"Error in save_byte_sequence_to_file: {e}")
 

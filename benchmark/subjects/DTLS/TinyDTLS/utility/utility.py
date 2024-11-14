@@ -51,11 +51,11 @@ def get_output_path(protocol: str) -> str:
 # 새로 만든 시드 코퍼스 저장 경로를 반환하는 함수
 def get_byte_sequence_output_path(protocol: str, dir: str) -> str:
     number = 0
-    if (not os.path.isdir(f'{dir}')) or (not os.path.isdir(f'{dir}/{protocol}')):
-        os.makedirs(f'{dir}/{protocol}')
+    if (not os.path.isdir(f'{dir}')):
+        os.makedirs(f'{dir}')
 
     while True:
-        output_dir = f"{dir}/{protocol}/"
+        output_dir = f"{dir}/"
         file_name = f"new_{protocol}_input_{number}.raw"
         file_path = os.path.join(output_dir, file_name)
 
