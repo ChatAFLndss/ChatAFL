@@ -23,7 +23,7 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   INPUTS=${INPUTS:-${WORKDIR}"/in-dns"}
 
   #Step-1. Do Fuzzing
-  if [ $FUZZER = "chatafl-bin"]; then
+  if [ $FUZZER = "chatafl-bin" ]; then
     pip install pydantic openai
     python3 enrich_corpus.py -o ${WORKDIR}/in-dns -p DNS
   fi
