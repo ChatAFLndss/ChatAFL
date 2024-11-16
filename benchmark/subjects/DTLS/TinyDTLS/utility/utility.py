@@ -17,8 +17,22 @@ def file_to_byte_sequence(file_path: str) -> str:
     except Exception as e:
         print(f"An error occurred: {e}")
 
+# 특정 파일에 바이트 시퀀스를 바이너리 데이터로 입력 후 줄바꿈을 하는 함수
+def add_byte_sequence_to_file(byte_sequence: str, file_path: str) -> None:
+    """
+    :param byte_sequence: 공백으로 구분된 16진수 바이트 시퀀스 문자열
+    :param file_name: 저장할 바이너리 파일의 이름
+    """
+    # 공백을 기준으로 바이트 시퀀스를 분리하여 각 바이트를 16진수로 변환
+    byte_values = bytearray(int(b, 16) for b in byte_sequence.split())
+
+    # 바이너리 파일로 저장
+    with open(file_path, "ab") as binary_file:
+        binary_file.write(byte_values)
+        binary_file.write(b"\n")
+
 # 바이트 시퀀스를 바이너리 파일로 변환하여 저장하는 함수
-def save_byte_sequence_to_file(byte_sequence: str, file_path: str) -> None:
+def save_total_byte_sequence_to_file(byte_sequence: str, file_path: str) -> None:
     """
     :param byte_sequence: 공백으로 구분된 16진수 바이트 시퀀스 문자열
     :param file_name: 저장할 바이너리 파일의 이름
@@ -52,7 +66,7 @@ def get_output_path(protocol: str) -> str:
 def get_byte_sequence_output_path(protocol: str, dir: str) -> str:
     number = 0
     if (not os.path.isdir(f'{dir}')):
-        os.makedirs(f'{dir}')
+        os.makedirs(f'{dir}/')
 
     while True:
         output_dir = f"{dir}/"
