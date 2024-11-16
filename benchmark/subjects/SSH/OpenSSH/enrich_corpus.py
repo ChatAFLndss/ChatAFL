@@ -7,7 +7,7 @@ from typing import Dict
 
 import os
 import argparse
-import re
+import json
 
 from pprint import pprint
 
@@ -17,6 +17,7 @@ MODEL = "gpt-4o-mini"
 
 client = OpenAI()
 
+## Class
 class Section(BaseModel):
     section_name: str
     byte_length: str
@@ -29,7 +30,6 @@ class Section(BaseModel):
         for sub in self.subsection:
             tree_str += sub.display_tree(indent + 4)  # 들여쓰기 레벨 추가
         return tree_str
-    
 Section.model_rebuild() # This is required to enable recursive types
 
 class ProtocolStructure(BaseModel):
@@ -38,7 +38,27 @@ class ProtocolStructure(BaseModel):
     def display_tree(self) -> str:
         return self.protocol_structure.display_tree()
 
+## CLASS
+class BinarySection(BaseModel):
+    section_name: str
+    byte_sequence: str
+    subsection: List["BinarySection"]
 
+    def display_tree(self, indent: int = 0) -> str:
+        # 기본 정보 출력
+        tree_str = " " * indent + f"|-- {self.section_name} (Byte sequence: {self.byte_sequence})\n"
+        # 하위 섹션이 있는 경우 재귀적으로 탐색
+        for sub in self.subsection:
+            tree_str += sub.display_tree(indent + 4)  # 들여쓰기 레벨 추가
+        return tree_str
+BinarySection.model_rebuild() # This is required to enable recursive types
+
+class Message(BaseModel):
+    protocol_structure: BinarySection
+    def display_tree(self) -> str:
+        return self.protocol_structure.display_tree()
+
+## Helper Function
 def structure_to_json(structure: ProtocolStructure) -> Dict:
     ## Helper Function
     def section_to_dict(section: Section) -> Dict:
@@ -52,6 +72,20 @@ def structure_to_json(structure: ProtocolStructure) -> Dict:
     # Message 객체의 protocol_structure를 JSON으로 변환
     return section_to_dict(structure.protocol_structure)
 
+def message_to_json(message: Message) -> Dict:        
+    ## Helper Function
+    def section_to_dict(section: BinarySection) -> Dict:
+        # 현재 섹션을 'section_name': 'byte_sequence' 형식으로 변환
+        section_dict = {section.section_name: section.byte_sequence}
+        # 하위 섹션이 있을 경우 재귀적으로 변환 후 추가
+        if section.subsection:
+            section_dict["subsection"] = [section_to_dict(sub) for sub in section.subsection]
+        else:
+            section_dict["subsection"] = []
+        return section_dict
+        
+    # Message 객체의 protocol_structure를 JSON으로 변환
+    return section_to_dict(message.protocol_structure)
 
 ## LLM
 # 프로토콜의 구조를 가져오는 함수
@@ -254,41 +288,6 @@ def get_message_type_sequence(types):
     return [sequence.message_type_sequence for sequence in response.message_type_sequences]
 
 def get_structured_message(structure, type):
-    ## CLASS
-    class Section(BaseModel):
-        section_name: str
-        byte_sequence: str
-        subsection: List["Section"]
-
-        def display_tree(self, indent: int = 0) -> str:
-            # 기본 정보 출력
-            tree_str = " " * indent + f"|-- {self.section_name} (Byte sequence: {self.byte_sequence})\n"
-            # 하위 섹션이 있는 경우 재귀적으로 탐색
-            for sub in self.subsection:
-                tree_str += sub.display_tree(indent + 4)  # 들여쓰기 레벨 추가
-            return tree_str
-    
-    Section.model_rebuild() # This is required to enable recursive types
-
-    class Message(BaseModel):
-        protocol_structure: Section
-
-        def display_tree(self) -> str:
-            return self.protocol_structure.display_tree()
-    
-    def message_to_json(message: Message) -> Dict:
-        def section_to_dict(section: Section) -> Dict:
-            # 현재 섹션을 'section_name': 'byte_sequence' 형식으로 변환
-            section_dict = {section.section_name: section.byte_sequence}
-            # 하위 섹션이 있을 경우 재귀적으로 변환 후 추가
-            if section.subsection:
-                section_dict["subsection"] = [section_to_dict(sub) for sub in section.subsection]
-            else:
-                section_dict["subsection"] = []
-            return section_dict
-        # Message 객체의 protocol_structure를 JSON으로 변환
-        return section_to_dict(message.protocol_structure)
-
     # Prompt
     """
     For {PROTOCOL} protocol, the message structure with the message type {type} is {structure}.
@@ -296,9 +295,9 @@ def get_structured_message(structure, type):
     Format the byte sequence output as a string with hex bytes separated by spaces, in the format '00 01 ... fe fd'.
     Message's byte sequences are MUST reveal message type."
     """
-    prompt = f"For {PROTOCOL} protocol, the message structure with the message type {type} is {structure}. "\
-            f"Generate a {type} byte sequence message according to the structure. "\
-            "Format the byte sequence output as a string with hex bytes separated by spaces, in the format '00 01 ... fe fd'. "
+    prompt = f"For the {PROTOCOL} protocol, the message structure with the message type {type} is as follows: {structure}. "\
+            f"Generate a byte sequence message of type {type} according to this structure. "\
+            "Format the byte sequence output as a string with hex bytes separated by spaces, in the format '00 01 ... fe fd'."
             # "Message's byte sequences are MUST reveal message type."
 
     temperature = 0.5
@@ -306,10 +305,13 @@ def get_structured_message(structure, type):
         model=MODEL,
         temperature=temperature,
         messages=[
-            {"role": "system", "content": f"The role of this model is to generate messages and types in binary-based protocol, {PROTOCOL},"
-                                        "ensuring that each message adheres to protocol specifications. "
-                                        "The model will construct message structures and define types "
-                                        "accurately to meet the requirements of the protocol."},
+            {"role": "system", "content": f"You are an expert in communication protocols and data structures. "
+                                            "Generate accurate and consistent byte sequence messages "
+                                            "according to the given protocol and message structure. "
+                                            "Base your answers solely on the provided information, "
+                                            "and do not include additional assumptions or unnecessary details. "
+                                            "Format the byte sequence output as per the instruction, "
+                                            "displaying hex bytes separated by spaces, like '00 01 ... fe fd'."},
             {"role": "user", "content": prompt}
         ],
         response_format=Message,
@@ -340,59 +342,24 @@ def get_structured_message(structure, type):
     return message_to_json(response)
 
 def get_modified_structured_message(message, structure, type):
-    ## CLASS
-    class Section(BaseModel):
-        section_name: str
-        byte_sequence: str
-        subsection: List["Section"]
-
-        def display_tree(self, indent: int = 0) -> str:
-            # 기본 정보 출력
-            tree_str = " " * indent + f"|-- {self.section_name} (Byte sequence: {self.byte_sequence})\n"
-            # 하위 섹션이 있는 경우 재귀적으로 탐색
-            for sub in self.subsection:
-                tree_str += sub.display_tree(indent + 4)  # 들여쓰기 레벨 추가
-            return tree_str
-    
-    Section.model_rebuild() # This is required to enable recursive types
-
-    class Message(BaseModel):
-        protocol_structure: Section
-
-        def display_tree(self) -> str:
-            return self.protocol_structure.display_tree()
-    def message_to_json(message: Message) -> Dict:        
-        ## Helper Function
-        def section_to_dict(section: Section) -> Dict:
-            # 현재 섹션을 'section_name': 'byte_sequence' 형식으로 변환
-            section_dict = {section.section_name: section.byte_sequence}
-            # 하위 섹션이 있을 경우 재귀적으로 변환 후 추가
-            if section.subsection:
-                section_dict["subsection"] = [section_to_dict(sub) for sub in section.subsection]
-            else:
-                section_dict["subsection"] = []
-            return section_dict
-            
-        # Message 객체의 protocol_structure를 JSON으로 변환
-        return section_to_dict(message.protocol_structure)
-
     # Prompt
     """
     If the message {message} in the {PROTOCOL} protocol does not match the {type} format,
     please modify it to conform to the {type} structure.
     """
-    prompt = f"```\n"\
-            f"{message}\n"\
-            f"```\n"\
-            f"If the message byte sequence in the {PROTOCOL} protocol does not match the message type '{type}' format, especially type and length, "\
-            f"please modify this message to conform the {type} message format according to structure {structure}."
+    prompt = f"If the message {message} in the {PROTOCOL} protocol does not match the format for type '{type}', "\
+            f"which is defined as {structure}, please modify or fix it to conform to the type {type} structure."
 
     temperature = 0.5
     completion = client.beta.chat.completions.parse(
         model=MODEL,
         temperature=temperature,
         messages=[
-            {"role": "system", "content": f"The role of this model is to analyze and verify messages and types in binary-based protocol, {PROTOCOL}, ensuring that the messages conform to protocol specifications. The model will interpret message structures and type definitions, directly making any necessary corrections to ensure accuracy and compliance."},
+            {"role": "system", "content": "You are an expert in communication protocols and data formatting. "
+                                            "When given a message and a protocol's message structure, "
+                                            "accurately modify the message to conform to the specified format. "
+                                            "Base your response solely on the provided information, "
+                                            "without adding any assumptions or unnecessary details."},
             {"role": "user", "content": prompt}
         ],
         response_format=Message,
@@ -422,43 +389,7 @@ def get_modified_structured_message(message, structure, type):
 
     return message_to_json(response)
 
-def get_modified_structured_message_v2(message, type):
-    ## CLASS
-    class Section(BaseModel):
-        section_name: str
-        byte_sequence: str
-        subsection: List["Section"]
-
-        def display_tree(self, indent: int = 0) -> str:
-            # 기본 정보 출력
-            tree_str = " " * indent + f"|-- {self.section_name} (Byte sequence: {self.byte_sequence})\n"
-            # 하위 섹션이 있는 경우 재귀적으로 탐색
-            for sub in self.subsection:
-                tree_str += sub.display_tree(indent + 4)  # 들여쓰기 레벨 추가
-            return tree_str
-    
-    Section.model_rebuild() # This is required to enable recursive types
-
-    class Message(BaseModel):
-        protocol_structure: Section
-
-        def display_tree(self) -> str:
-            return self.protocol_structure.display_tree()
-    def message_to_json(message: Message) -> Dict:        
-        ## Helper Function
-        def section_to_dict(section: Section) -> Dict:
-            # 현재 섹션을 'section_name': 'byte_sequence' 형식으로 변환
-            section_dict = {section.section_name: section.byte_sequence}
-            # 하위 섹션이 있을 경우 재귀적으로 변환 후 추가
-            if section.subsection:
-                section_dict["subsection"] = [section_to_dict(sub) for sub in section.subsection]
-            else:
-                section_dict["subsection"] = []
-            return section_dict
-            
-        # Message 객체의 protocol_structure를 JSON으로 변환
-        return section_to_dict(message.protocol_structure)
-
+def get_modified_structured_message_v2(message, structure, type):
     # Prompt
     """
     If the message {message} in the {PROTOCOL} protocol does not match the {type} format,
@@ -468,7 +399,7 @@ def get_modified_structured_message_v2(message, type):
             f"{message}"\
             f"```\n"\
             f"Given the structure of a specific protocol and byte sequences for each section, "\
-            f"check if the message has any issues with respect to the {type} (especially regarding length). "\
+            f"check if the message has any issues especially LENGTH SECTION with respect to the {type} with structure {structure}. "\
             f"If any issues are found, adjust the byte sequence to comply with the correct format and length for the {type} message."
 
     temperature = 0.5
@@ -513,7 +444,7 @@ def get_modified_structured_message_v2(message, type):
 
     return message_to_json(response)
 
-def get_section_byte_sequence(section_name, type, bytes):
+def get_section_byte_sequence(section_name, bytes, type):
     class Section(BaseModel):
         byte_sequence: str
 
@@ -521,10 +452,10 @@ def get_section_byte_sequence(section_name, type, bytes):
     """
     특정 {PROTOCOL} 프로토콜의 {type} 메시지의 {section_name} section에 들어갈 수 있는 임의의 바이트 시퀀스를 생성하시오.
     만약 해당 섹션이 존재하지 않는다면 빈 문자열을 반환하시오.
-    Generate a random {bytes} byte sequence for the {section_name} section of a {type} message in the {PROTOCOL} protocol.
+    Generate a arbitrary/random {bytes} byte sequence for the {section_name} section of a {type} message in the {PROTOCOL} protocol.
     If the specified section does not exist, return an empty string.
     """
-    prompt = f"Generate a random {bytes} byte sequence for the {section_name} section of a {type} message in the {PROTOCOL} protocol."\
+    prompt = f"Generate a proper {bytes} byte sequence for the '{section_name}' section of a {type} message in the {PROTOCOL} protocol. "\
             f"If the specified section does not exist, return an empty string. "\
             f"Format the byte sequence output as a string with hex bytes separated by spaces, in the format '00 01 ... fe fd'."
 
@@ -581,6 +512,7 @@ def main():
 
     # 프로토콜 타입 겟또다제
     protocol_types = get_protocol_types(PROTOCOL)
+    # 프로토콜 타입 시퀀스 겟또다제
     protocol_type_sequences = get_message_type_sequence(protocol_types)
     
     specified_protocol_structures = {}
@@ -597,30 +529,34 @@ def main():
         except Exception as e:
             print(f"Error in get_specified_protocol_structure(): {e}")
         # 프로토콜 메시지 겟또다제
-        ## Case 1: 전체 메시지 한 번에 생성
-        try:
-            protocol_structured_message = get_structured_message(specified_protocol_structure, type)
-            protocol_structured_messages[type] = protocol_structured_message
-        except Exception as e:
-            print(f"Error in get_structured_message(): {e}")
-        # 프로토콜 메시지 수정본 겟또다제
-        try:
-            protocol_modified_structured_message = get_modified_structured_message(utility.concatenate_values(protocol_structured_message), specified_protocol_structure, type)
-            protocol_structured_messages[type] = protocol_modified_structured_message
-        except Exception as e:
-            print(f"Error in get_modified_structured_message(): {e}")
-        ## Case 2: 섹션별 메시지 생성
+        # Case 1: 전체 메시지 한 번에 생성
         # try:
-        #     # Structure 순회하며 Section byte sequence 생성
-        #     for key, value in specified_protocol_structure:
-        #         get_section_byte_sequence(section_name="SECTION_NAME", type=type)
-        # except Exception as e: 
-        #     print(f"Error in get_section_byte_sequence: {e}")
-        # try:
-        #     # 전체 메시지 시퀀스에 대해 길이 및 세부 사항에 대해서 수정
-        #     get_modified_structured_message_v2(message="MESSAGE", type=type)
+        #     protocol_structured_message = get_structured_message(specified_protocol_structure, type)
+        #     protocol_structured_messages[type] = protocol_structured_message
         # except Exception as e:
-        #     print(f"Error in get_modified_structured_message_v2: {e}")
+        #     print(f"Error in get_structured_message(): {e}")
+        # # 프로토콜 메시지 수정본 겟또다제
+        # try:
+        #     protocol_modified_structured_message = get_modified_structured_message(utility.concatenate_values(protocol_structured_message), specified_protocol_structure, type)
+        #     protocol_structured_messages[type] = protocol_modified_structured_message
+        # except Exception as e:
+        #     print(f"Error in get_modified_structured_message(): {e}")
+        ## Case 2: 섹션별 메시지 생성
+        try:
+            # 섹션별 메시지 생성 후 concatenate
+            message = {}
+            subsection = utility.extract_subsection_pairs(specified_protocol_structure)
+            for data in subsection:
+                byte_sequence = get_section_byte_sequence(section_name=data[0], bytes=data[1], type=type)
+                message[data[0]] = utility.parse_to_byte_sequence(byte_sequence)
+            json_message = json.dumps(message)
+        except Exception as e:
+            print(f"Error in get_section_byte_sequence: {e}")
+        try:
+            # 전체 메시지 시퀀스에 대해 길이 및 세부 사항에 대해서 수정
+            protocol_structured_messages[type] = get_modified_structured_message_v2(message=json_message, structure=specified_protocol_structure, type=type)
+        except Exception as e:
+            print(f"Error in get_modified_structured_message_v2: {e}")
         idx += 1
 
     pprint(specified_protocol_structures)
@@ -639,14 +575,14 @@ def main():
                     print(f"{e}")
                 break
             byte_sequence += utility.concatenate_values(protocol_structured_messages.get(type))
-            ## Case 2. 각 메시지마다 줄바꿈을 하여 바이너리 파일로 저장 TODO test.
+            ## Case 1. 각 메시지마다 줄바꿈을 하여 바이너리 파일로 저장
             try:
                 utility.add_byte_sequence_to_file(byte_sequence=utility.concatenate_values(protocol_structured_messages.get(type)),
                                                   file_path=output_path)
             except Exception as e:
                 print(f"Error in add_byte_sequence_to_file: {e}")
 
-        ## Case 1. 각 메시지마다 줄바꿈 없이 그냥 일련의 바이너리 파일로 저장
+        ## Case 2. 각 메시지마다 줄바꿈 없이 그냥 일련의 바이너리 파일로 저장
         # try:
         #     utility.save_total_byte_sequence_to_file(byte_sequence=byte_sequence, file_path=output_path)
         # except Exception as e:

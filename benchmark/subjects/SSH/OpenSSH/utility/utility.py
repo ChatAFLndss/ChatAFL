@@ -100,3 +100,38 @@ def concatenate_values(data):
     
     recurse(data)
     return ' '.join(result)
+
+# Protocol structure에서 subsection 하위의 데이터를 tuple의 list로 만들어 반환하는 함수
+def extract_subsection_pairs(data):
+    result = []
+    if isinstance(data, dict):
+        if 'subsection' in data:
+            # Ignore other keys at this level and process 'subsection'
+            subsections = data['subsection']
+            for subsection in subsections:
+                result.extend(extract_subsection_pairs(subsection))
+        else:
+            # No 'subsection' at this level; collect key-value pairs
+            for key, value in data.items():
+                result.append((key, value))
+    elif isinstance(data, list):
+        # Process each item in the list
+        for item in data:
+            result.extend(extract_subsection_pairs(item))
+    return result
+
+# 특정 문자열이 byte sequence인지 확인하여 수정 및 그대로 반환하는 함수
+def parse_to_byte_sequence(input_string: str) -> str:
+    """
+    :param input_string: 입력 문자열
+    :return: 공백으로 구분된 바이트 시퀀스 문자열
+    """
+    try:
+        # 공백으로 구분된 16진수 형태인지 확인 후 변환
+        byte_values = [f"{int(b, 16):02x}" for b in input_string.split()]
+    except ValueError:
+        # 16진수 변환 실패 시 문자열을 UTF-8 바이트로 변환
+        byte_values = [f"{ord(char):02x}" for char in input_string]
+
+    # 공백으로 구분된 문자열로 반환
+    return " ".join(byte_values)
