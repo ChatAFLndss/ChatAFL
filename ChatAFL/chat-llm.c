@@ -57,11 +57,11 @@ char *chat_with_llm(char *prompt, char *model, int tries, float temperature)
     char *data = NULL;
     if (strcmp(model, "instruct") == 0)
     {
-        asprintf(&data, "{\"model\": \"gpt-4-turbo\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_OUTPUT_TOKENS, temperature);
+        asprintf(&data, "{\"model\": \"gpt-4o-mini\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_OUTPUT_TOKENS, temperature);
     }
     else
     {
-        asprintf(&data, "{\"model\": \"gpt-4-turbo\",\"messages\": %s, \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_OUTPUT_TOKENS, temperature);
+        asprintf(&data, "{\"model\": \"gpt-4o-mini\",\"messages\": %s, \"max_tokens\": %d, \"temperature\": %f}", prompt, MAX_OUTPUT_TOKENS, temperature);
     }
     curl_global_init(CURL_GLOBAL_DEFAULT);
     do
