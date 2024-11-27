@@ -24,7 +24,7 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   #Step-1. Do Fuzzing
   if [ $FUZZER = "chatafl-bin" ]; then
     pip install pydantic openai
-    python3 enrich_corpus.py -o ${WORKDIR}/in-dtls -p DTLS
+    python3 enrich_corpus.py -o ${WORKDIR}/in-dtls -p DTLS12
   fi
   #Move to fuzzing folder
   cd $WORKDIR

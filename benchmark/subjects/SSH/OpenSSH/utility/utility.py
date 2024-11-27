@@ -1,4 +1,6 @@
 import os
+from typing import List, Dict
+from pydantic import BaseModel
 
 ## UTILITY
 # 파일을 바이트 시퀀스로 변환하여 반환하는 함수
@@ -135,3 +137,92 @@ def parse_to_byte_sequence(input_string: str) -> str:
 
     # 공백으로 구분된 문자열로 반환
     return " ".join(byte_values)
+
+# 중복되는 결과 저장 및 로깅을 처리하는 함수
+def save_and_log_result(file_path: str, model: str, temperature: float, prompt: str, completion, response):
+    """
+    중복되는 결과 저장 및 로깅을 처리하는 함수
+
+    :param file_path: 결과를 저장할 파일 경로
+    :param model: 사용된 모델 이름
+    :param temperature: 설정된 온도 값
+    :param prompt: 사용된 프롬프트
+    :param completion: API 응답 객체
+    :param response: 파싱된 응답
+    """
+    result = ""
+    result += "============ Setup ============\n"
+    result += f"Model:          {model}\n"
+    result += f"Temperature:    {temperature}\n"
+    result += "============ Prompt ============\n"
+    result += f"{prompt}\n"
+    result += "============ Tokens ============\n"
+    result += f"Total Tokens:       {completion.usage.total_tokens}\n"
+    result += f"Prompt Tokens:      {completion.usage.prompt_tokens}\n"
+    result += f"Completion Tokens:  {completion.usage.completion_tokens}\n"
+    result += "============ Response ============\n"
+    result += f"{response}\n"
+
+    write_to_file(file_path=file_path, string=result)
+
+    # DEBUG
+    print(result)
+
+# LLM 테스트용 프롬프트
+def test_llm(prompt, client):
+    class Result(BaseModel):
+        result: str
+    temperature = 0.5
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-mini",
+        temperature=temperature,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=Result,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+    return response.result
+
+def flatten_binary_sections(section: Dict) -> Dict[str, str]:
+    """
+    BinarySection 구조를 가진 dictionary를 입력으로 받아,
+    subsection이 빈 리스트인 경우인 section_name을 key로,
+    byte_sequence를 value로 하여 level이 없는 dictionary를 반환합니다.
+    
+    Args:
+        section (Dict): BinarySection 구조를 가진 dictionary.
+    
+    Returns:
+        Dict[str, str]: section_name을 key로, byte_sequence를 value로 하는 평탄화된 dictionary.
+    """
+    flat_dict = {}
+
+    def recurse(current_section: Dict):
+        # subsection이 비어있는 경우
+        if not current_section.get('subsection'):
+            section_name = current_section.get('section_name')
+            byte_sequence = current_section.get('byte_sequence')
+            if section_name and byte_sequence:
+                flat_dict[section_name] = byte_sequence
+        else:
+            # 하위 섹션이 있는 경우 재귀적으로 탐색
+            for sub in current_section.get('subsection', []):
+                recurse(sub)
+    
+    recurse(section)
+    return flat_dict
+
+def concatenate_values_t2s(message_dict: Dict[str, str]) -> str:
+    """
+    딕셔너리를 입력받아 값들을 순차적으로 순회하며 각 값 사이에 공백을 추가하여 하나의 문자열로 연결합니다.
+
+    Args:
+        message_dict (Dict[str, str]): 섹션 이름을 키로 하고 바이트 시퀀스를 값으로 하는 딕셔너리.
+
+    Returns:
+        str: 모든 바이트 시퀀스가 공백으로 구분된 하나의 문자열.
+    """
+    return ' '.join(message_dict.values())
