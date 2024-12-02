@@ -554,38 +554,39 @@ def main():
                 
                 message[data[0]] = utility.parse_to_byte_sequence(selected_byte_sequence)
             json_message = json.dumps(message)
+            protocol_structured_messages[protocol_type] = json_message
             pprint(json_message)
         except Exception as e:
             print(f"Error in get_section_byte_sequence: {e}")
         
         ## Modify Message
-        try:
-            # 전체 메시지 시퀀스에 대해 길이 및 세부 사항에 대해서 수정
-            is_issue, protocol_structured_messages[protocol_type] = get_modified_structured_message_v2(
-                                                                        message=json_message,
-                                                                        structure=specified_protocol_structure,
-                                                                        type=protocol_type
-            )
-            repeat = 1
-            while is_issue and repeat < MODIFY_RETRY:
-                is_issue, protocol_structured_messages[protocol_type] = get_modified_structured_message_v2(
-                    message=protocol_structured_messages[protocol_type],
-                    structure=specified_protocol_structure,
-                    type=protocol_type
-                )
-                repeat += 1
-        except Exception as e:
-            print(f"Error in get_modified_structured_message_v2: {e}")
+        # try:
+        #     # 전체 메시지 시퀀스에 대해 길이 및 세부 사항에 대해서 수정
+        #     is_issue, protocol_structured_messages[protocol_type] = get_modified_structured_message_v2(
+        #                                                                 message=json_message,
+        #                                                                 structure=specified_protocol_structure,
+        #                                                                 type=protocol_type
+        #     )
+        #     repeat = 1
+        #     while is_issue and repeat < MODIFY_RETRY:
+        #         is_issue, protocol_structured_messages[protocol_type] = get_modified_structured_message_v2(
+        #             message=protocol_structured_messages[protocol_type],
+        #             structure=specified_protocol_structure,
+        #             type=protocol_type
+        #         )
+        #         repeat += 1
+        # except Exception as e:
+        #     print(f"Error in get_modified_structured_message_v2: {e}")
         idx += 1
 
     pprint(specified_protocol_structures)
     pprint(protocol_structured_messages)
 
     ## 프로토콜 구조 정상화
-    for type in protocol_types:
-        print(f"{type}: {protocol_structured_messages.get(type)}")
-        protocol_structured_messages[type] = to_protocol_structure(specified_protocol_structures[type], protocol_structured_messages[type])
-    pprint(protocol_structured_messages)
+    # for type in protocol_types:
+    #     print(f"{type}: {protocol_structured_messages.get(type)}")
+    #     protocol_structured_messages[type] = to_protocol_structure(specified_protocol_structures[type], protocol_structured_messages[type])
+    # pprint(protocol_structured_messages)
 
     # 프로토콜 타입 시퀀스 겟또다제
     protocol_type_sequences = get_message_type_sequence(protocol_types)
