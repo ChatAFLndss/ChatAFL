@@ -42,27 +42,10 @@ for subject in [' exim']:
 #Convert the list to a dataframe
 mean_df = pd.DataFrame(mean_list, columns = ['subject', 'fuzzer', 'cov_type', 'time', 'cov'])
 
+# Set global font sizes
+plt.rcParams.update({'font.size': 30})
 
 #Plot the data
-#mean_df.set_index('time', inplace=True)
-#mean_df.groupby(['fuzzer', 'cov_type'])['cov'].plot(legend=True)
-
-#fig = plt.figure(1, figsize = (20, 10))
-#chart_b_abs = fig.add_subplot(221)
-#chart_b_per = fig.add_subplot(222)
-#chart_l_abs = fig.add_subplot(223)
-#chart_l_per = fig.add_subplot(224)
-
-#for key, grp in mean_df.groupby(['fuzzer', 'cov_type']):
-#    if key[1] == ' b_abs':
-#      chart_b_abs.plot(grp['time'], grp['cov'])
-#    if key[1] == ' b_per':
-#      chart_b_per.plot(grp['time'], grp['cov'])
-#    if key[1] == ' l_abs':
-#      chart_l_abs.plot(grp['time'], grp['cov'])
-#    if key[1] == ' l_per':
-#      chart_l_per.plot(grp['time'], grp['cov'])
-
 fig, axes = plt.subplots(2, 2, figsize = (20, 10))
 fig.suptitle("Code coverage analysis")
 

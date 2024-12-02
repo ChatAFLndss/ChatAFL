@@ -56,8 +56,11 @@ def main(csv_file, put, runs, cut_off, step, out_file, fuzzers):
   print("Saving mean logs into file...")
   mean_df.to_csv("mean_plot_data.csv", index=False)
 
-  fig, axes = plt.subplots(1, 2, figsize = (10, 20))
-  fig.suptitle("State coverage analysis")
+  # Set global font sizes
+  plt.rcParams.update({'font.size': 30})
+
+  fig, axes = plt.subplots(1, 2, figsize = (40, 20))
+  fig.suptitle("State coverage analysis", fontsize=20)
 
   ylim = 0
   for key, grp in mean_df.groupby(['fuzzer', 'data_type']):

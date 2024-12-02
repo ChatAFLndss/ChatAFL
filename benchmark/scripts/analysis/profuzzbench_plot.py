@@ -15,6 +15,9 @@ def main(csv_file, put, runs, cut_off, step, out_file, fuzzers):
   #Calculate the mean of code coverage
   #Store in a list first for efficiency
   mean_list = []
+  
+  # Set global font sizes
+  plt.rcParams.update({'font.size': 30})
 
   for subject in [put]:
     for fuzzer in fuzzers:
@@ -55,7 +58,7 @@ def main(csv_file, put, runs, cut_off, step, out_file, fuzzers):
   #Convert the list to a dataframe
   mean_df = pd.DataFrame(mean_list, columns = ['subject', 'fuzzer', 'cov_type', 'time', 'cov'])
 
-  fig, axes = plt.subplots(2, 2, figsize = (20, 10))
+  fig, axes = plt.subplots(2, 2, figsize = (40, 20))
   fig.suptitle("Code coverage analysis")
 
   for key, grp in mean_df.groupby(['fuzzer', 'cov_type']):
