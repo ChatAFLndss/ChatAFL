@@ -508,8 +508,8 @@ def main():
     idx = 0
     for protocol_type in protocol_types:
         ## DEBUG
-        if idx == 1:
-            break
+        # if idx == 1:
+        #     break
         # 구체화된 프로토콜 구조 겟또다제
         try:
             specified_protocol_structure = get_specified_protocol_structure(structure=protocol_structure, type=protocol_type)
@@ -557,6 +557,8 @@ def main():
             pprint(json_message)
         except Exception as e:
             print(f"Error in get_section_byte_sequence: {e}")
+        
+        ## Modify Message
         try:
             # 전체 메시지 시퀀스에 대해 길이 및 세부 사항에 대해서 수정
             is_issue, protocol_structured_messages[protocol_type] = get_modified_structured_message_v2(
