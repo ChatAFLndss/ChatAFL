@@ -6,9 +6,14 @@ if [ -z $KEY ]; then
 fi
 
 # Update the openAI key
-for x in ChatAFL ChatAFL-CL1 ChatAFL-CL2 ChatAFL-SEED;
+for x in ChatAFL ChatAFL-CL1 ChatAFL-CL2 ChatAFL-SEED ChatAFL-BIN;
 do
   sed -i "s/#define OPENAI_TOKEN \".*\"/#define OPENAI_TOKEN \"$KEY\"/" $x/chat-llm.h
+done
+
+for y in DICOM/Dcmtk DNS/Dnsmasq DTLS/TinyDTLS SSH/OpenSSH;
+do
+  sed -i "s/ENV OPENAI_API_KEY=\".*\"/ENV OPENAI_API_KEY=\"$KEY\"/" benchmark/subjects/$y/Dockerfile
 done
 
 # Copy the different versions of ChatAFL to the benchmark directories
@@ -27,6 +32,9 @@ for subject in ./benchmark/subjects/*/*; do
 
   rm -r $subject/chatafl-seed 2>&1 >/dev/null
   cp -r ChatAFL-SEED $subject/chatafl-seed
+  
+  rm -r $subject/chatafl-bin 2>&1 >/dev/null
+  cp -r ChatAFL-BIN $subject/chatafl-bin
 done;
 
 # Build the docker images

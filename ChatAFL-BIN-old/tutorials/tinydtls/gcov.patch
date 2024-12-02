@@ -1,0 +1,106 @@
+diff --git a/Makefile.in b/Makefile.in
+index 87a0fea..43c7524 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -47,7 +47,7 @@ HEADERS:=dtls.h hmac.h dtls_debug.h dtls_config.h uthash.h numeric.h crypto.h gl
+  netq.h alert.h utlist.h dtls_prng.h peer.h state.h dtls_time.h session.h \
+  tinydtls.h dtls_mutex.h
+ PKG_CONFIG_FILES:=tinydtls.pc
+-CFLAGS:=-Wall -pedantic -std=c99 -DSHA2_USE_INTTYPES_H @CFLAGS@ \
++CFLAGS:=-fprofile-arcs -ftest-coverage -Wall -pedantic -std=c99 -DSHA2_USE_INTTYPES_H @CFLAGS@ \
+  @WARNING_CFLAGS@ $(EXTRA_CFLAGS)
+ CPPFLAGS:=@CPPFLAGS@ -DDTLS_CHECK_CONTENTTYPE -I$(top_srcdir)
+ SUBDIRS:=tests tests/unit-tests doc platform-specific sha2 aes ecc
+diff --git a/aes/Makefile.in b/aes/Makefile.in
+index 30d5bc5..114f321 100644
+--- a/aes/Makefile.in
++++ b/aes/Makefile.in
+@@ -30,7 +30,7 @@ SOURCES:= rijndael.c rijndael_wrap.c
+ HEADERS:= rijndael.h
+ OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
+ CPPFLAGS=@CPPFLAGS@
+-CFLAGS=-Wall -std=c99 -pedantic @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS)
++CFLAGS=-fprofile-arcs -ftest-coverage -Wall -std=c99 -pedantic @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS)
+ LDFLAGS=@LDFLAGS@
+ LDLIBS=@LIBS@
+ FILES:=Makefile.in $(SOURCES) $(HEADERS) 
+diff --git a/ecc/Makefile.in b/ecc/Makefile.in
+index 9ecc042..3601ecb 100644
+--- a/ecc/Makefile.in
++++ b/ecc/Makefile.in
+@@ -38,7 +38,7 @@ else
+ ECC_OBJECTS:= $(patsubst %.c, %.o, $(ECC_SOURCES)) ecc_test.o
+ PROGRAMS:= testecc testfield
+ CPPFLAGS=@CPPFLAGS@
+-CFLAGS=-Wall -std=c99 -pedantic @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS) -DTEST_INCLUDE
++CFLAGS=-fprofile-arcs -ftest-coverage -Wall -std=c99 -pedantic @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS) -DTEST_INCLUDE
+ LDFLAGS=@LDFLAGS@
+ LDLIBS=@LIBS@
+ 
+diff --git a/sha2/Makefile.in b/sha2/Makefile.in
+index 5c880c7..ca99b02 100644
+--- a/sha2/Makefile.in
++++ b/sha2/Makefile.in
+@@ -30,7 +30,7 @@ SOURCES:= sha2.c
+ HEADERS:=sha2.h
+ OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
+ CPPFLAGS=@CPPFLAGS@ -I$(top_srcdir)
+-CFLAGS=-DSHA2_USE_INTTYPES_H -Wall -std=c99 -pedantic @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS)
++CFLAGS=-fprofile-arcs -ftest-coverage -DSHA2_USE_INTTYPES_H -Wall -std=c99 -pedantic @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS)
+ LDFLAGS=@LDFLAGS@
+ LDLIBS=@LIBS@
+ FILES:=Makefile.in $(SOURCES) $(HEADERS) README sha2prog.c sha2speed.c sha2test.pl 
+diff --git a/tests/Makefile.in b/tests/Makefile.in
+index a3097d9..686923d 100644
+--- a/tests/Makefile.in
++++ b/tests/Makefile.in
+@@ -33,7 +33,7 @@ SOURCES:= dtls-server.c ccm-test.c \
+ OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
+ PROGRAMS:= $(patsubst %.c, %, $(SOURCES))
+ HEADERS:=
+-CFLAGS:=-Wall -std=c99 @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS) -D_GNU_SOURCE
++CFLAGS:=-fprofile-arcs -ftest-coverage -Wall -std=c99 @CFLAGS@ @WARNING_CFLAGS@ $(EXTRA_CFLAGS) -D_GNU_SOURCE
+ CPPFLAGS:=-I$(top_srcdir) @CPPFLAGS@
+ LDFLAGS:=-L$(top_builddir) @LDFLAGS@
+ LDLIBS:=$(top_srcdir)/libtinydtls.a @LIBS@
+diff --git a/tests/dtls-server.c b/tests/dtls-server.c
+index 5a3c03c..3ad9734 100644
+--- a/tests/dtls-server.c
++++ b/tests/dtls-server.c
+@@ -42,6 +42,7 @@
+ #endif /* ! IS_WINDOWS */
+ 
+ #define DEFAULT_PORT 20220
++static int quit = 0;
+ 
+ static dtls_context_t *the_context = NULL;
+ 
+@@ -304,6 +305,10 @@ static dtls_handler_t cb = {
+ #endif /* DTLS_ECC */
+ };
+ 
++void handle_sigusr1(int signum) {
++  quit = 1;
++}
++
+ int
+ main(int argc, char **argv) {
+   log_t log_level = DTLS_LOG_WARN;
+@@ -317,7 +322,7 @@ main(int argc, char **argv) {
+   struct sigaction sa;
+ #endif /* ! IS_WINDOWS */
+   uint16_t port = htons(DEFAULT_PORT);
+-
++  signal(SIGUSR1, handle_sigusr1);
+   memset(&listen_addr, 0, sizeof(struct sockaddr_in6));
+ 
+   /* fill extra field for 4.4BSD-based systems (see RFC 3493, section 3.4) */
+@@ -411,7 +416,7 @@ main(int argc, char **argv) {
+ 
+   dtls_set_handler(the_context, &cb);
+ 
+-  while (1) {
++  while (!quit) {
+     FD_ZERO(&rfds);
+     FD_ZERO(&wfds);
+ 

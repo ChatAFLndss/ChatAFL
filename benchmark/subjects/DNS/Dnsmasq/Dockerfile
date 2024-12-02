@@ -69,6 +69,11 @@ RUN cd chatafl-seed && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
+COPY --chown=ubuntu:ubuntu chatafl-bin chatafl-bin
+RUN cd chatafl-bin && \
+    make clean all $MAKE_OPT && \
+    cd llvm_mode && make $MAKE_OPT
+    
     # Set up environment variables for AFLNet
 ENV WORKDIR="/home/ubuntu/experiments"
 ENV AFLNET="/home/ubuntu/aflnet"
@@ -77,6 +82,7 @@ ENV AFL_PATH="${AFLNET}"
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
     AFL_NO_AFFINITY=1
+ENV OPENAI_API_KEY="1"
 
 
 RUN mkdir $WORKDIR
@@ -111,6 +117,8 @@ COPY --chown=ubuntu:ubuntu dns.dict ${WORKDIR}/dns.dict
 COPY --chown=ubuntu:ubuntu cov_script.sh ${WORKDIR}/cov_script
 COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
 COPY --chown=ubuntu:ubuntu dnsmasq.conf ${WORKDIR}/dnsmasq.conf
+COPY --chown=ubuntu:ubuntu enrich_corpus.py ${WORKDIR}/enrich_corpus.py
+COPY --chown=ubuntu:ubuntu utility ${WORKDIR}/utility
 
 RUN cp ${WORKDIR}/dnsmasq.conf /etc/ && \
     echo address=/test.com/5.5.5.5 | sudo tee -a /etc/dnsmasq.conf

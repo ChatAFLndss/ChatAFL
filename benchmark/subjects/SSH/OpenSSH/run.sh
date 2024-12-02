@@ -23,6 +23,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   INPUTS=${INPUTS:-${WORKDIR}"/in-ssh"}
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip3 install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-ssh -p SSH
+  fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}
 

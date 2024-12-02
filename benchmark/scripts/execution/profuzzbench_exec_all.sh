@@ -66,6 +66,11 @@ do
                 profuzzbench_exec_common.sh lightftp $NUM_CONTAINERS results-lightftp chatafl-seed out-lightftp-chatafl_seed "-P FTP -D 10000 -q 3 -s 3 -E -K -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh lightftp $NUM_CONTAINERS results-lightftp chatafl-bin out-lightftp-chatafl_bin "-P FTP -D 10000 -q 3 -s 3 -E -K -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
 
@@ -98,6 +103,11 @@ do
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh bftpd $NUM_CONTAINERS results-bftpd chatafl-seed out-bftpd-chatafl_seed "-P FTP -D 10000 -q 3 -s 3 -E -K -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh bftpd $NUM_CONTAINERS results-bftpd chatafl-bin out-bftpd-chatafl_bin "-P FTP -D 10000 -q 3 -s 3 -E -K -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
@@ -134,6 +144,11 @@ do
                 profuzzbench_exec_common.sh proftpd $NUM_CONTAINERS results-proftpd chatafl-seed out-proftpd-chatafl_seed "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh proftpd $NUM_CONTAINERS results-proftpd chatafl-bin out-proftpd-chatafl_bin "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
         if [[ $TARGET == "pure-ftpd" ]] || [[ $TARGET == "all" ]]
@@ -165,6 +180,11 @@ do
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh pure-ftpd $NUM_CONTAINERS results-pure-ftpd chatafl-seed out-pure-ftpd-chatafl_seed "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh pure-ftpd $NUM_CONTAINERS results-pure-ftpd chatafl-bin out-pure-ftpd-chatafl_bin "-m none -P FTP -D 10000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
@@ -203,6 +223,11 @@ do
                 profuzzbench_exec_common.sh exim $NUM_CONTAINERS results-exim chatafl-seed out-exim-chatafl_seed "-P SMTP -D 10000 -q 3 -s 3 -E -K -W 100 -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh exim $NUM_CONTAINERS results-exim chatafl-bin out-exim-chatafl_bin "-P SMTP -D 10000 -q 3 -s 3 -E -K -W 100 -m none -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
 
@@ -237,6 +262,11 @@ do
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh live555 $NUM_CONTAINERS results-live555 chatafl-seed out-live555-chatafl_seed "-P RTSP -D 10000 -q 3 -s 3 -E -K -R -m none" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh live555 $NUM_CONTAINERS results-live555 chatafl-bin out-live555-chatafl_bin "-P RTSP -D 10000 -q 3 -s 3 -E -K -R -m none" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
@@ -275,6 +305,11 @@ do
                 profuzzbench_exec_common.sh kamailio $NUM_CONTAINERS results-kamailio chatafl-seed out-kamailio-chatafl_seed "-m none -P SIP -l 5061 -D 50000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh kamailio $NUM_CONTAINERS results-kamailio chatafl-bin out-kamailio-chatafl_bin "-m none -P SIP -l 5061 -D 50000 -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
 ##### DAAPD #####
@@ -308,6 +343,11 @@ do
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh forked-daapd $NUM_CONTAINERS results-forked-daapd chatafl-seed out-forked-daapd-chatafl_seed "-P HTTP -D 200000 -m none -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh forked-daapd $NUM_CONTAINERS results-forked-daapd chatafl-bin out-forked-daapd-chatafl_bin "-P HTTP -D 200000 -m none -q 3 -s 3 -E -K -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
@@ -345,6 +385,11 @@ do
                 profuzzbench_exec_common.sh lighttpd1 $NUM_CONTAINERS results-lighttpd1 chatafl-seed out-lighttpd1-chatafl_seed "-P HTTP -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh lighttpd1 $NUM_CONTAINERS results-lighttpd1 chatafl-bin out-lighttpd1-chatafl_bin "-P HTTP -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
 ##### DICOM #####
@@ -378,6 +423,11 @@ do
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh dcmtk $NUM_CONTAINERS results-dcmtk chatafl-seed out-dcmtk-chatafl_seed "-P DICOM -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh dcmtk $NUM_CONTAINERS results-dcmtk chatafl-bin out-dcmtk-chatafl_bin "-P DICOM -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
@@ -415,6 +465,11 @@ do
                 profuzzbench_exec_common.sh dnsmasq $NUM_CONTAINERS results-dnsmasq chatafl-seed out-dnsmasq-chatafl_seed "-P DNS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh dnsmasq $NUM_CONTAINERS results-dnsmasq chatafl-bin out-dnsmasq-chatafl_bin "-P DNS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
 ##### DTLS #####
@@ -448,6 +503,11 @@ do
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
                 profuzzbench_exec_common.sh tinydtls $NUM_CONTAINERS results-tinydtls chatafl-seed out-tinydtls-chatafl_seed "-P DTLS12 -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh tinydtls $NUM_CONTAINERS results-tinydtls chatafl-bin out-tinydtls-chatafl_bin "-P DTLS12 -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
@@ -485,6 +545,11 @@ do
                 profuzzbench_exec_common.sh openssh $NUM_CONTAINERS results-openssh chatafl-seed out-openssh-chatafl_seed "-P SSH -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh openssh $NUM_CONTAINERS results-openssh chatafl-bin out-openssh-chatafl_bin "-P SSH -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
         fi
 
 ##### TLS #####
@@ -497,28 +562,32 @@ do
 
             if [[ $FUZZER == "aflnet" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl aflnet out-openssl-aflnet "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl aflnet out-openssl-aflnet "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl out-openssl-chatafl "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl out-openssl-chatafl "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl-cl1" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl1 out-openssl-chatafl_cl1 "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl1 out-openssl-chatafl_cl1 "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
             if [[ $FUZZER == "chatafl-cl2" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl2 out-openssl-chatafl_cl2 "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-cl2 out-openssl-chatafl_cl2 "-P TLS -D 200000 -m none -q 3 -s 3 -K -E -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
-
 
             if [[ $FUZZER == "chatafl-seed" ]] || [[ $FUZZER == "all" ]]
             then
-                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-seed out-openssl-chatafl_seed "-P TLS -D 200000 -m none -q 3 -s 3 -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-seed out-openssl-chatafl_seed "-P TLS -D 200000 -m none -q 3 -s 3 -K -E -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
+            fi
+
+            if [[ $FUZZER == "chatafl-bin" ]] || [[ $FUZZER == "all" ]]
+            then
+                profuzzbench_exec_common.sh openssl $NUM_CONTAINERS results-openssl chatafl-bin out-openssl-chatafl_bin "-P TLS -D 200000 -m none -q 3 -s 3 -E -K -R -t ${TEST_TIMEOUT}+" $TIMEOUT $SKIPCOUNT &
             fi
 
         fi
