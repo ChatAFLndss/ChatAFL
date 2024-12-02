@@ -93,7 +93,7 @@ def message_to_json(message: Message) -> Dict:
 
 ## LLM
 ## 1. 프로토콜의 구조를 가져오는 함수
-def get_protocol_structure_recursive(protocol: str, type: str) -> List[str]:
+def get_protocol_structure_recursive(protocol: str) -> List[str]:
     # Prompt
     """
     For DICOM protocol, protocol message's structure is
@@ -103,17 +103,13 @@ def get_protocol_structure_recursive(protocol: str, type: str) -> List[str]:
                     ("Length", length=4 bytes)]),
     ("PDU Data", length=variable,
         subsection=[("Data Elements", length=variable)])]
-    For the {PROTOCOL} protocol, network protocol message's structure is: 
+    For the {PROTOCOL} protocol, {type} protocol message's structure is: 
     """
     ## ORIGINAL
     prompt = f"For DICOM protocol, protocol message's structure is "\
         "[(\"PDU Header\", length=6 bytes, subsection=[(\"PDU Type\", length=1 byte), (\"Reserved\", length=1 byte), (\"Length\", length=4 bytes)]), "\
-        "(\"PDU Data\", length=variable, subsection=[(\"Data Elements\", length=variable)])]. "\
-        f"For the {protocol} protocol, {type} protocol message's structure is: "
-    # prompt = f"For DICOM protocol, protocol message's structure is "\
-    #     "[(\"PDU Header\", length=6 bytes, dependency_section=\"\", subsection=[(\"PDU Type\", length=1 byte, dependency_section=\"\"), (\"Reserved\", length=1 byte, dependency_section=\"\"), (\"Length\", length=4 bytes, dependency_section=\"PDU Data\")]), "\
-    #     "(\"PDU Data\", length=variable, dependency_section=\"\", subsection=[(\"Data Elements\", length=variable, dependency_section=\"\")])]. "\
-    #     f"For the {protocol} protocol, {type} protocol message's structure is: "
+        "(\"PDU Data\", length=variable, subsection=[(\"Data Elements\", length=variable)])]."\
+        f"For the {protocol} protocol, protocol message's structure is: "
 
     temperature = 0.1
     completion = client.beta.chat.completions.parse(
@@ -153,7 +149,7 @@ def get_protocol_types(protocol: str) -> List[str]:
     For the {PROTOCOL} protocol, all protocol client request message types are:
     """
     prompt = f"For the DICOM protocol, protocol client request message types include "\
-            f"[\'A-ASSOCIATE-RQ\', \'A-RELEASE-RQ\', \'C-ECHO-RQ\', \'C-ECHO-RSP\', ...]."\
+            f"[\'A-ASSOCIATE-RQ\', \'A-RELEASE-RQ\', \'C-ECHO-RQ\', \'C-ECHO-RSP\', ...]. "\
             f"For the {PROTOCOL} protocol, all protocol message types sent by client are:"
 
     temperature = 0.1
@@ -181,6 +177,41 @@ def get_protocol_types(protocol: str) -> List[str]:
     )
 
     return response.protocol_type_list
+
+## 3. 프로토콜 메시지의 특정 타입에 대한 구조를 반환하는 함수
+def get_specified_protocol_structure(structure, type):
+    # Prompt
+    """
+    For the {PROTOCOL} protocol, the base protocol message structure is {PROTOCOL STRUCTURE}.
+    A specialized protocol message structure for the message type {TYPE} based on this structure is:
+    """
+    prompt = f"For the {PROTOCOL} protocol, the base protocol message structure is {structure}. "\
+            f"A specialized protocol message structure for the message type {type} based on this structure is:"
+
+    temperature = 0.1
+    completion = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=temperature, # 0.1~0.3 사이로 하는 게 좋아보임
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=ProtocolStructure,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+
+    # Save result using utility function
+    utility.save_and_log_result(
+        file_path=FILE_PATH,
+        model=MODEL,
+        temperature=temperature,
+        prompt=prompt,
+        completion=completion,
+        response=response
+    )
+
+    return structure_to_json(response)
 
 ## 4. 메시지 타입 시퀀스를 반환하는 함수
 def get_message_type_sequence(types):
@@ -241,7 +272,7 @@ def get_section_byte_sequence(message, section_name, bytes, description, type):
     {bytes} 길이의 {section_name}의 바이트 시퀀스 데이터는 무엇인가?
     바이트 시퀀스는 16진수로 표현되어야 하며 공백으로 구분되어야 한다.
     """
-    prompt = f"The following {type} messages of the {PROTOCOL} protocol's {type} message have been created so far:\n"\
+    prompt = f"The following {type} messages of the {PROTOCOL} protocol have been created so far:\n"\
             f"```\n"\
             f"{message}\n"\
             f"```\n"\
@@ -351,7 +382,7 @@ def get_modified_structured_message_v2(message, structure, type):
     ```
     프로토콜의 구조 {structure}에 따라 위의 메시지에 대하여 문제가 있다면 True를 반환하며 해당 key 값을 반환하라.
     """
-    prompt = f"The following {type} messages of the {PROTOCOL} protocol's {type} byte sequences message have been created so far:\n"\
+    prompt = f"The following {type} message byte sequences of the {PROTOCOL} protocol have been created so far:\n"\
             f"```\n"\
             f"{message}\n"\
             f"```\n"\
@@ -391,7 +422,7 @@ def get_modified_structured_message_v2(message, structure, type):
         ```
         위 메시지의 {message_issues} 섹션에 대하여 알맞게 수정하시오. 수정한 메시지는 유효한 데이터를 가지고 있어야 한다.
         """
-        prompt = f"The following {type} messages of the {PROTOCOL} protocol's {type} message byte sequences have been created so far:\n"\
+        prompt = f"The following {type} message byte sequences of the {PROTOCOL} protocol have been created so far:\n"\
                 f"```\n"\
                 f"{message}\n"\
                 f"```\n"\
@@ -467,25 +498,21 @@ def main():
     OUTPUT= ARGS.output
     FILE_PATH = utility.get_output_path(PROTOCOL)
     
-    # print(utility.test_llm(client=client, prompt="What is the structure of SSH protocol's SSH_MSG_UNIMPLEMENTED client request message in byte sequence?"))
-    # print(utility.test_llm(client=client, prompt="What is the SSH_MSG_UNIMPLEMENTED client request message's type number in byte sequence?"))
-    # exit()
-
     # 프로토콜 타입 겟또다제
     protocol_types = get_protocol_types(PROTOCOL)
     # 프로토콜 구조 겟또다제
-    # protocol_structure = get_protocol_structure_recursive(PROTOCOL)
+    protocol_structure = get_protocol_structure_recursive(PROTOCOL)
     
     specified_protocol_structures = {}
     protocol_structured_messages = {}
     idx = 0
     for protocol_type in protocol_types:
         ## DEBUG
-        # if idx == 1:
-        #     break
+        if idx == 1:
+            break
         # 구체화된 프로토콜 구조 겟또다제
         try:
-            specified_protocol_structure = get_protocol_structure_recursive(protocol=PROTOCOL, type=protocol_type)
+            specified_protocol_structure = get_specified_protocol_structure(structure=protocol_structure, type=protocol_type)
             specified_protocol_structures[protocol_type] = specified_protocol_structure
         except Exception as e:
             print(f"Error in get_specified_protocol_structure(): {e}")
