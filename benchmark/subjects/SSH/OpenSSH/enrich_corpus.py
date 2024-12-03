@@ -563,8 +563,8 @@ def main():
     idx = 0
     for type in protocol_types:
         ## DEBUG
-        if idx == 1:
-            break
+        # if idx == 1:
+        #     break
         # 구체화된 프로토콜 구조 겟또다제
         retry_count = 0
         while retry_count < LLM_RETRY:
