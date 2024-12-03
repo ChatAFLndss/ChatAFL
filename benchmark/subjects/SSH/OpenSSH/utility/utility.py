@@ -80,6 +80,22 @@ def get_byte_sequence_output_path(protocol: str, dir: str) -> str:
         else:
             return file_path
 
+# 새로 만든 시드 코퍼스 저장 경로를 반환하는 함수
+def get_byte_sequence_output_path_section(protocol: str, dir: str) -> str:
+    number = 0
+    if (not os.path.isdir(f'{dir}')):
+        os.makedirs(f'{dir}/')
+
+    while True:
+        output_dir = f"{dir}/"
+        file_name = f"new_{protocol}_input_section_{number}.raw"
+        file_path = os.path.join(output_dir, file_name)
+
+        if os.path.exists(file_path):
+            number += 1
+        else:
+            return file_path
+
 # 파일에 입력받은 문자열을 작성하는 함수
 def write_to_file(file_path: str, string: str):
     with open(file_path, 'a') as file:

@@ -8,17 +8,21 @@ import os
 import argparse
 import json
 from pprint import pprint
+import collections
+import random
 
 global ARGS, PROTOCOL, INPUT, OUTPUT, FILE_PATH
 
 MODEL = "gpt-4o-mini"
 LLM_RETRY = 5 # 최대 5번 재시도
+MODIFY_RETRY = 3
 client = OpenAI()
 
 ## Class
 class Section(BaseModel):
     section_name: str
     byte_length: str
+    description: str
     subsection: List["Section"]
 
     def display_tree(self, indent: int = 0) -> str:
@@ -39,6 +43,7 @@ class ProtocolStructure(BaseModel):
 ## CLASS
 class BinarySection(BaseModel):
     section_name: str
+    byte_length: str
     byte_sequence: str
     subsection: List["BinarySection"]
 
@@ -61,7 +66,7 @@ def structure_to_json(structure: ProtocolStructure) -> Dict:
     ## Helper Function
     def section_to_dict(section: Section) -> Dict:
         # 현재 섹션을 'section_name': 'byte_sequence' 형식으로 변환
-        section_dict = {section.section_name: section.byte_length}
+        section_dict = {section.section_name: (section.byte_length, section.description)}
         # 하위 섹션이 있을 경우 재귀적으로 변환 후 추가
         if section.subsection:
             section_dict["subsection"] = [section_to_dict(sub) for sub in section.subsection]
@@ -300,6 +305,246 @@ def get_modified_structured_message(message, structure, type):
 
     return message_to_json(response)
 
+
+## 5-b. 특정 섹션에 들어갈 수 있는 임의의 바이트 시퀀스를 생성하는 함수
+def get_section_byte_sequence(message, section_name, bytes, description, type):
+    class Section(BaseModel):
+        byte_sequence: str
+        # description: str
+    class CorrectSection(BaseModel):
+        correct_byte_sequence: str
+        # description: str
+    # Prompt
+    """
+    현재까지 만들어진 {PROTOCOL}의 {type} 메시지는 다음과 같다.
+    ```
+    {message}
+    ```
+    여기서 {section_name}의 의미는 \"{description}\"이다.
+    {bytes} 길이의 {section_name}의 바이트 시퀀스 데이터는 무엇인가?
+    바이트 시퀀스는 16진수로 표현되어야 하며 공백으로 구분되어야 한다.
+    """
+    prompt = f"The following {type} messages of the {PROTOCOL} protocol have been created so far:\n"\
+            f"```\n"\
+            f"{message}\n"\
+            f"```\n"\
+            f"Here, the meaning of '{section_name}' is \"{description}\". "\
+            f"What is the byte sequence data of '{section_name}' with a length of {bytes} bytes? "\
+            f"The byte sequence should be represented in hexadecimal format, separated by spaces."
+
+    temperature = 0.5
+    completion = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=temperature,
+        messages=[
+            {"role": "system", "content": f"You are a protocol message generator and validator for {PROTOCOL} binary-based protocols."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=Section,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+    message[section_name] = response.byte_sequence
+    # Save result using utility function
+    utility.save_and_log_result(
+        file_path=FILE_PATH,
+        model=MODEL,
+        temperature=temperature,
+        prompt=prompt,
+        completion=completion,
+        response=response
+    )
+    initial_response = response.byte_sequence
+
+    # Prompt
+    """
+    Please verify the correctness of the following data for the {type} messages of the {PROTOCOL}:
+    ```
+    {message}
+    ```
+    In this context, {section_name} represents {description}.
+    Is the byte sequence of {section_name} with {bytes} correct?
+    If the sequence is incorrect, please provide the corrected byte sequence in hexadecimal format, separated by spaces.
+    """
+    prompt = f"Please verify the correctness of the following data for the {type} messages of the {PROTOCOL}:\n"\
+            f"```\n"\
+            f"{message}\n"\
+            f"```\n"\
+            f"In this context, {section_name} represents \"{description}\". "\
+            f"Is the byte sequence of '{section_name}' with {bytes} correct? "\
+            f"If the sequence is incorrect, please provide the corrected byte sequence in hexadecimal format, separated by spaces."
+
+    temperature = 0.5
+    completion = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=temperature,
+        messages=[
+            {"role": "system", "content": f"You are a protocol message generator and validator for {PROTOCOL} binary-based protocols."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=CorrectSection,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+
+    # Save result using utility function
+    utility.save_and_log_result(
+        file_path=FILE_PATH,
+        model=MODEL,
+        temperature=temperature,
+        prompt=prompt,
+        completion=completion,
+        response=response
+    )
+    print(f"Initial response: {initial_response}")
+    print(f"Corrected response: {response.correct_byte_sequence}")
+    return response.correct_byte_sequence
+
+## 6-b. 프로토콜 메시지 수정 함수 (section)
+def get_modified_structured_message_v2(message, structure, type):
+    class MessageIssues(BaseModel):
+        is_issue: bool
+        message_issues: List[str]
+
+    class BinaryMessage(BaseModel):
+        section_name: str
+        byte_sequence: str
+
+    class BinaryMessages(BaseModel):
+        binary_messages: List[BinaryMessage]
+    
+    def binary_messages_to_dict(messages: List[BinaryMessage]) -> Dict[str, str]:
+        """
+        BinaryMessage 객체들의 리스트를 받아 section_name을 키로, byte_sequence를 값으로 하는 딕셔너리를 반환합니다.
+        
+        Args:
+            messages (List[BinaryMessage]): 변환할 BinaryMessage 객체들의 리스트.
+        
+        Returns:
+            Dict[str, str]: section_name을 키로 하고 byte_sequence를 값으로 하는 딕셔너리.
+        """
+        return {message.section_name: message.byte_sequence for message in messages}
+
+
+    # Prompt
+    """
+    The following {type} messages of the {PROTOCOL} have been created so far:
+    ```
+    {message}
+    ```
+    프로토콜의 구조 {structure}에 따라 위의 메시지에 대하여 문제가 있다면 True를 반환하며 해당 key 값을 반환하라.
+    """
+    prompt = f"The following {type} message byte sequences of the {PROTOCOL} protocol have been created so far:\n"\
+            f"```\n"\
+            f"{message}\n"\
+            f"```\n"\
+            f"According to the structure of the protocol, "\
+            f"return True if there is an issue with the above message and return the corresponding key with explanation."
+
+    temperature = 0.5
+    completion = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=temperature,
+        messages=[
+            {"role": "system", "content": f"You are a protocol message validator and byte sequence modifier."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=MessageIssues,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+    message_issues = response.message_issues
+    # Save result using utility function
+    utility.save_and_log_result(
+        file_path=FILE_PATH,
+        model=MODEL,
+        temperature=temperature,
+        prompt=prompt,
+        completion=completion,
+        response=response
+    )
+
+    # 문제가 있는 경우 수정
+    if response.is_issue:
+        # Prompt
+        """
+        The following {type} messages of the {PROTOCOL} have been created so far:
+        ```
+        {message}
+        ```
+        위 메시지의 {message_issues} 섹션에 대하여 알맞게 수정하시오. 수정한 메시지는 유효한 데이터를 가지고 있어야 한다.
+        """
+        prompt = f"The following {type} message byte sequences of the {PROTOCOL} protocol have been created so far:\n"\
+                f"```\n"\
+                f"{message}\n"\
+                f"```\n"\
+                f"Please appropriately modify the {message_issues} issues of the above message. "\
+                f"The modified message should contain valid data. "\
+                f"The byte sequence should be in hexadecimal format, separated by spaces."
+
+        temperature = 0.5
+        completion = client.beta.chat.completions.parse(
+            model=MODEL,
+            temperature=temperature,
+            messages=[
+                {"role": "system", "content": f"You are a protocol message validator and byte sequence modifier."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format=BinaryMessages,
+            timeout=15
+        )
+        response = completion.choices[0].message.parsed
+    else:
+        return False, message
+
+    # Save result using utility function
+    utility.save_and_log_result(
+        file_path=FILE_PATH,
+        model=MODEL,
+        temperature=temperature,
+        prompt=prompt,
+        completion=completion,
+        response=response
+    )
+    print(f"Message issues: {message_issues}")
+    return True, binary_messages_to_dict(response.binary_messages)
+
+
+def to_protocol_structure(structure: str, message: str) -> List[str]:
+    # Prompt
+    """
+    """
+    prompt = f"For {PROTOCOL} protocol, protocol message's structure is {structure}. "\
+            f"Parse the following message into the protocol structure: {message}. "\
+            f"The byte sequence should be in hexadecimal format, separated by spaces."
+            
+    temperature = 0.1
+    completion = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=temperature, # 0.1~0.3 사이로 하는 게 좋아보임
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=Message,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+    
+    # Save result using utility function
+    utility.save_and_log_result(
+        file_path=FILE_PATH,
+        model=MODEL,
+        temperature=temperature,
+        prompt=prompt,
+        completion=completion,
+        response=response
+    )
+    print(response.display_tree())
+
+    return message_to_json(response)
+
+
 def main():
     global ARGS, PROTOCOL, INPUT, OUTPUT, FILE_PATH
     PROTOCOL = ARGS.protocol
@@ -313,12 +558,13 @@ def main():
     protocol_types = get_protocol_types(PROTOCOL)
     
     specified_protocol_structures = {}
-    protocol_structured_messages = {}
+    protocol_structured_messages_total = {}
+    protocol_structured_messages_section = {}
     idx = 0
     for type in protocol_types:
         ## DEBUG
-        # if idx == 1:
-        #     break
+        if idx == 1:
+            break
         # 구체화된 프로토콜 구조 겟또다제
         retry_count = 0
         while retry_count < LLM_RETRY:
@@ -336,7 +582,7 @@ def main():
             try:
                 protocol_structured_message = get_structured_message(structure=specified_protocol_structure,
                                                                      type=type)
-                protocol_structured_messages[type] = protocol_structured_message
+                protocol_structured_messages_total[type] = protocol_structured_message
                 break
             except Exception as e:
                 print(f"Error in get_structured_message(): {e}")
@@ -346,38 +592,124 @@ def main():
         while retry_count < LLM_RETRY:
             try:
                 protocol_modified_structured_message = get_modified_structured_message(utility.concatenate_values(protocol_structured_message), specified_protocol_structure, type)
-                protocol_structured_messages[type] = protocol_modified_structured_message
+                protocol_structured_messages_total[type] = protocol_modified_structured_message
                 break
             except Exception as e:
                 print(f"Error in get_modified_structured_message(): {e}")
                 retry_count += 1
+        ## END 전체 메시지 한 번에 생성
+        ## Case 2: 섹션별 메시지 생성
+        try:
+            # 섹션별 메시지 생성 후 concatenate
+            message = {}
+            subsection = utility.extract_subsection_pairs(specified_protocol_structure)
+            # print(subsection)
+            for data in subsection:
+                message[data[0]] = data[1][0]
+            # pprint(message)
+            for data in reversed(subsection):
+                byte_sequences = [
+                    get_section_byte_sequence(
+                        message=message,
+                        section_name=data[0],
+                        bytes=data[1][0],
+                        description=data[1][1],
+                        type=type
+                    )
+                    for _ in range(LLM_RETRY)
+                ]
+                
+                # 유효한 바이트 시퀀스만 필터링
+                byte_sequences = [bs for bs in byte_sequences if bs]
+                
+                if not byte_sequences:
+                    selected_byte_sequence = ""
+                else:
+                    counter = collections.Counter(byte_sequences)
+                    max_count = max(counter.values())
+                    most_common = [seq for seq, count in counter.items() if count == max_count]
+                    selected_byte_sequence = random.choice(most_common)
+                
+                message[data[0]] = utility.parse_to_byte_sequence(selected_byte_sequence)
+            json_message = json.dumps(message)
+            pprint(json_message)
+        except Exception as e:
+            print(f"Error in get_section_byte_sequence: {e}")
+        try:
+            # 전체 메시지 시퀀스에 대해 길이 및 세부 사항에 대해서 수정
+            is_issue, protocol_structured_messages_section[type] = get_modified_structured_message_v2(
+                                                                        message=json_message,
+                                                                        structure=specified_protocol_structure,
+                                                                        type=type
+            )
+            repeat = 1
+            while is_issue and repeat < MODIFY_RETRY:
+                is_issue, protocol_structured_messages_section[type] = get_modified_structured_message_v2(
+                    message=protocol_structured_messages_section[type],
+                    structure=specified_protocol_structure,
+                    type=type
+                )
+                repeat += 1
+        except Exception as e:
+            print(f"Error in get_modified_structured_message_v2: {e}")
+        ## END 섹션별 메시지 생성
         idx += 1
 
+    ## 섹션별 메시지 생성 프로토콜 구조 정상화
+    for type in protocol_types:
+        print(f"{type}: {protocol_structured_messages_section.get(type)}")
+        if protocol_structured_messages_section.get(type) != None:
+            protocol_structured_messages_section[type] = to_protocol_structure(specified_protocol_structures[type], protocol_structured_messages_section[type])
+    
     pprint(specified_protocol_structures)
-    pprint(protocol_structured_messages)
+    pprint(protocol_structured_messages_total)
+    pprint(protocol_structured_messages_section)
 
     # 프로토콜 타입 시퀀스 겟또다제
     protocol_type_sequences = get_message_type_sequence(protocol_types)
     # 메시지 시퀀스에 따른 시드 입력 생성
     for type_sequence in protocol_type_sequences:
+        # ChatAFL-BIN-total 저장
         output_path = utility.get_byte_sequence_output_path(PROTOCOL, OUTPUT)
         byte_sequence = ""
         for type in type_sequence:
-            if protocol_structured_messages.get(type) == None:
+            if protocol_structured_messages_total.get(type) == None:
                 try:
                     print(f"Can't make new binary message sequences in {output_path}: No structured {type} type message.")
                     os.remove(output_path)
                 except Exception as e:
                     print(f"{e}")
                 break
-            byte_sequence += utility.concatenate_values(protocol_structured_messages.get(type))
+            byte_sequence += utility.concatenate_values(protocol_structured_messages_total.get(type))
             # 각 메시지마다 줄바꿈을 하여 바이너리 파일로 저장
             try:
-                utility.add_byte_sequence_to_file(byte_sequence=utility.concatenate_values(protocol_structured_messages.get(type)),
+                utility.add_byte_sequence_to_file(byte_sequence=utility.concatenate_values(protocol_structured_messages_total.get(type)),
                                                   file_path=output_path)
-                print(f"{output_path} 파일로 저장되었습니다.")
             except Exception as e:
                 print(f"Error in add_byte_sequence_to_file: {e}")
+                
+        
+        # ChatAFL-BIN-section 저장
+        output_path = utility.get_byte_sequence_output_path_section(PROTOCOL, OUTPUT)
+        byte_sequence = ""
+        for type in type_sequence:
+            if protocol_structured_messages_section.get(type) == None:
+                try:
+                    print(f"Can't make new binary message sequences in {output_path}: No structured {type} type message.")
+                    os.remove(output_path)
+                except Exception as e:
+                    print(f"{e}")
+                break
+            byte_sequence += utility.concatenate_values(protocol_structured_messages_section.get(type))
+            # 각 메시지마다 줄바꿈을 하여 바이너리 파일로 저장
+            try:
+                utility.add_byte_sequence_to_file(byte_sequence=utility.concatenate_values(protocol_structured_messages_section.get(type)),
+                                                  file_path=output_path)
+            except Exception as e:
+                print(f"Error in add_byte_sequence_to_file: {e}")
+            print(f"{output_path} 파일로 저장되었습니다.")
+        
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
