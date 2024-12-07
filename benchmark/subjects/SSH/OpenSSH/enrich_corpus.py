@@ -259,7 +259,10 @@ def get_section_byte_sequence(message, section_name, bytes, description, type, r
         model=MODEL,
         temperature=temperature,
         messages=[
-            {"role": "system", "content": f"You are a protocol message generator and validator for {PROTOCOL} binary-based protocols."},
+            {"role": "system", "content": f"You are an expert in binary protocols and data serialization. "\
+                                            "Your task is to interpret the provided protocol details and generate precise byte sequence messages for the given sections of the protocol. "\
+                                            "Ensure that all byte sequences strictly adhere to the protocol's specifications and are represented in hexadecimal format. "\
+                                            "Each byte should be separated by a single space. Respond concisely and only with the required byte sequence unless additional clarification is requested."},
             {"role": "user", "content": prompt}
         ],
         response_format=Section,
@@ -301,7 +304,10 @@ def get_section_byte_sequence(message, section_name, bytes, description, type, r
         model=MODEL,
         temperature=temperature,
         messages=[
-            {"role": "system", "content": f"You are a protocol message generator and validator for {PROTOCOL} binary-based protocols."},
+            {"role": "system", "content": f"You are an expert in verifying binary protocol data and ensuring compliance with protocol specifications. "\
+                                        "Your role is to analyze the provided byte sequences against the described protocol details and verify their correctness. "\
+                                        "If any discrepancies are found, provide the corrected byte sequence in hexadecimal format, ensuring each byte is separated by a single space. "\
+                                        "Your responses should be precise and directly address the correctness of the byte sequence, including only necessary explanations or corrections as required."},
             {"role": "user", "content": prompt}
         ],
         response_format=CorrectSection,
@@ -368,7 +374,9 @@ def get_modified_structured_message_v2(message, structure, type):
         model=MODEL,
         temperature=temperature,
         messages=[
-            {"role": "system", "content": f"You are a protocol message validator and byte sequence modifier."},
+            {"role": "system", "content": f"You are an expert in analyzing and validating binary protocol messages. Your role is to examine the provided byte sequence messages as a whole and identify any issues or inconsistencies based on the protocol's structure and specifications. "\
+                                        "If an issue exists, return `True` along with the corresponding key and a concise explanation of the problem. If no issues are found, return `False`. "\
+                                        "Ensure your analysis is accurate and adheres strictly to the protocol's defined rules."},
             {"role": "user", "content": prompt}
         ],
         response_format=MessageIssues,
@@ -409,7 +417,9 @@ def get_modified_structured_message_v2(message, structure, type):
             model=MODEL,
             temperature=temperature,
             messages=[
-                {"role": "system", "content": f"You are a protocol message validator and byte sequence modifier."},
+                {"role": "system", "content": f"You are an expert in binary protocol message construction and repair. Your task is to analyze the provided byte sequence messages, identify the specified issues, and modify the message appropriately to ensure it adheres to the protocol's specifications. "\
+                                            "The corrected message must contain valid data and be represented in hexadecimal format, with each byte separated by a single space. "\
+                                            "Provide a response that is accurate and strictly addresses the identified issues while maintaining the protocol's integrity."},
                 {"role": "user", "content": prompt}
             ],
             response_format=BinaryMessages,
