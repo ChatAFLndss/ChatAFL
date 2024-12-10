@@ -85,9 +85,8 @@ def main(csv_file, put, runs, cut_off, step, out_file, fuzzers):
       axes[1, 1].set_xlabel('Time (in min)')
       axes[1, 1].set_ylabel('Line coverage (%)')
 
-  for i, ax in enumerate(fig.axes):
-    ax.legend(fuzzers, loc='upper left')
-    ax.grid()
+  fig.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+  plt.tight_layout()
 
   #Save to file
   plt.savefig(out_file)
