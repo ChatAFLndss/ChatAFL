@@ -23,6 +23,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   fi
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-rtsp -p RTSP
+  fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}/testProgs
   timeout -k 2s --preserve-status $TIMEOUT /home/ubuntu/${FUZZER}/afl-fuzz -d -i ${INPUTS} -x ${WORKDIR}/rtsp.dict -o $OUTDIR -N tcp://127.0.0.1/8554 $OPTIONS ./testOnDemandRTSPServer 8554

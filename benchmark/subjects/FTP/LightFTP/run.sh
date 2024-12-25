@@ -23,6 +23,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   INPUTS=${INPUTS:-"${WORKDIR}/in-ftp"}
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-ftp -p FTP
+  fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}/Source/Release
   echo "$WORKDIR/${TARGET_DIR}/Source/Release"

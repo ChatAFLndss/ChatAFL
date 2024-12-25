@@ -82,6 +82,7 @@ ENV AFL_PATH="${AFLNET}"
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
     AFL_NO_AFFINITY=1
+ENV OPENAI_API_KEY="1"
 
 
 RUN mkdir $WORKDIR
@@ -131,3 +132,5 @@ COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
 COPY --chown=ubuntu:ubuntu run_pjsip.sh ${WORKDIR}/run_pjsip
 COPY --chown=ubuntu:ubuntu kamailio-basic.cfg ${WORKDIR}/kamailio-basic.cfg
 COPY --chown=ubuntu:ubuntu StarWars3.wav ${WORKDIR}/StarWars3.wav
+COPY --chown=ubuntu:ubuntu enrich_corpus.py ${WORKDIR}/enrich_corpus.py
+COPY --chown=ubuntu:ubuntu utility ${WORKDIR}/utility

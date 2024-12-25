@@ -23,6 +23,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   INPUTS=${INPUTS:-${WORKDIR}"/in-sip"}
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-sip -p SIP
+  fi
   #Move to fuzzing folder
   export KAMAILIO_MODULES="src/modules"
   export KAMAILIO_RUNTIME_DIR="runtime_dir"

@@ -23,6 +23,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm") ; then
   fi
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-smtp -p SMTP
+  fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}
   cp ./src/build-Linux-x86_64/exim /usr/exim/bin/exim

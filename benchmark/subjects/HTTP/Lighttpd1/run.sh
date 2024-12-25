@@ -23,6 +23,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   fi
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-http -p HTTP
+  fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}/
   timeout -k 2s --preserve-status $TIMEOUT /home/ubuntu/${FUZZER}/afl-fuzz -d -i ${INPUTS} -x ${WORKDIR}/http.dict -o $OUTDIR -N tcp://127.0.0.1/8080 $OPTIONS ./src/lighttpd -D -f ${WORKDIR}/lighttpd.conf -m $PWD/src/.libs

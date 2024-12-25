@@ -41,6 +41,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   INPUTS=${INPUTS:-${WORKDIR}"/in-daap"}
 
   #Step-1. Do Fuzzing
+  if [ $FUZZER = "chatafl-bin" ]; then
+    pip install pydantic openai
+    python3 enrich_corpus.py -o ${WORKDIR}/in-daap -p DAAP
+  fi
   #Move to fuzzing folder
   cd $WORKDIR
 

@@ -82,6 +82,7 @@ ENV AFL_PATH="${AFLNET}"
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
     AFL_NO_AFFINITY=1
+ENV OPENAI_API_KEY="1"
 
 
 RUN mkdir $WORKDIR
@@ -128,6 +129,8 @@ COPY --chown=ubuntu:ubuntu ftp.dict ${WORKDIR}/ftp.dict
 COPY --chown=ubuntu:ubuntu cov_script.sh ${WORKDIR}/cov_script
 COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
 COPY --chown=ubuntu:ubuntu clean.sh ${WORKDIR}/ftpclean
+COPY --chown=ubuntu:ubuntu enrich_corpus.py ${WORKDIR}/enrich_corpus.py
+COPY --chown=ubuntu:ubuntu utility ${WORKDIR}/utility
 
 
 # For debugging purposes
