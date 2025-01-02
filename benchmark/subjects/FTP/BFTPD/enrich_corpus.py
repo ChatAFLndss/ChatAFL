@@ -20,6 +20,9 @@ client = OpenAI()
 
 ## Class
 # 필드 명을 추출하는데 사용하는 클래스
+class StructureType(str, Enum):
+    HeaderBodyStyle = "Header-Body style"
+    CommandLineStyle = "Command line style"
 class FieldName(BaseModel):
     field_name: str
     description: str
@@ -36,6 +39,7 @@ class RequestLine(BaseModel):
     parameters: str
 class TextProtocolMessage(BaseModel):
     method: str
+    structure_type: StructureType
     request_line: RequestLine
     field_value: List[FieldValue]
     # is_command_based: bool 의미 없음 구분 안됨 (RTSP/SMTP)
@@ -168,18 +172,37 @@ def print_text_based_protocol_structure(protocol: str, method: str, field_name: 
         print(f"{idx}. {field.field_name}: {field.description}")
     print("-" * 50)
 
+def check_structure_type(protocol: str, method: str) -> StructureType:
+    class Type(BaseModel):
+        type: StructureType
+
+    prompt = f"""For the {protocol} protocol, check if the {method} message type is in header-body style or command line style."""
+
+    temperature = 0.1
+    completion = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=temperature,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=Type,
+        timeout=15
+    )
+    response = completion.choices[0].message.parsed
+
+    return response.type
+
+
 def generate_protocol_message(protocol: str, method: str, message_description: str) -> TextProtocolMessage:
     # Prompt
     prompt = f"""For the {protocol} protocol, generate a realistic {method} message.
     The message structure is:
     {message_description}
     
-    Generate a request line with method and parameters, and then generate values for each field.
-    The response should include:
-    1. A request line with the method and parameters
-    2. Field values that follow the typical format and constraints"""
+    Generate a message with method and parameters, and then generate values for each field."""
 
-    temperature = 0.2
+    temperature = 0.5
     completion = client.beta.chat.completions.parse(
         model=MODEL,
         temperature=temperature,
@@ -204,10 +227,13 @@ def generate_protocol_message(protocol: str, method: str, message_description: s
 
     return response
 
-def to_str_protocol_message(message: TextProtocolMessage) -> str:
-    message_str = f"{message.request_line.method} {message.request_line.parameters}"
-    for field in message.field_value:
-        message_str += f"\n{field.field_name}: {field.value}"
+def to_str_protocol_message(message: TextProtocolMessage, style: StructureType) -> str:
+    if style == StructureType.HeaderBodyStyle:
+        message_str = f"{message.request_line.method} {message.request_line.parameters}\r\n"
+        for field in message.field_value:
+            message_str += f"{field.field_name}: {field.value}\r\n"
+    elif style == StructureType.CommandLineStyle:
+        message_str = f"{message.request_line.method} {message.request_line.parameters}\r\n"
     return message_str
 
 def main():
@@ -241,10 +267,12 @@ def main():
         for field in fields:
             message_description += f"\n  - {field.field_name}: {field.description}"
         protocol_messages[method] = generate_protocol_message(PROTOCOL, method, message_description)
-        
+        structure_type = check_structure_type(PROTOCOL, method)
+        protocol_messages[method].structure_type = structure_type
 
         # DEBUG: Print generated message
-        print(to_str_protocol_message(protocol_messages[method])+"\n")
+        print(f"Method: {method}, Structure Type: {protocol_messages[method].structure_type}")
+        print(to_str_protocol_message(protocol_messages[method], protocol_messages[method].structure_type)+"\n")
 
     ## Step 4
     # 프로토콜 메시지 시퀀스 생성
@@ -258,7 +286,7 @@ def main():
         file_path = utility.get_text_message_output_path(PROTOCOL, OUTPUT)
         message_sequence = []
         for method in message_type_sequences[i]:
-            message_sequence.append(to_str_protocol_message(protocol_messages[method]))
+            message_sequence.append(to_str_protocol_message(protocol_messages[method], protocol_messages[method].structure_type))
         utility.save_text_message_sequence_to_file(message_sequence, file_path)
 
 if __name__ == "__main__":
