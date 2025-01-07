@@ -277,13 +277,14 @@ def get_structured_message(structure, type):
              f"Generate a byte sequence message of type {type} according to this structure. "
              f"Format the byte sequence output as a string with hex bytes separated by spaces, in the format '00 01 ... fe fd'. "
              f"For example, the SSH_MSG_DISCONNECT Protocol Message Structure is: {example_structure}."
-             # Forward CoT
-             f"1. SSH_MSG_DISCONNECT's PDU type is 1 with 1 byte. So, PDU Type is '01'."
-             f"2. SSH_MSG_DISCONNECT's Reserved section with 1 byte set as '00'."
-             f"3. SSH_MSG_DISCONNECT's Length section is 4 bytes. Arbitrary, Length is 18 in decimal = 12 in hexadecimal. So, Length is '00 00 00 12'."
-             f"4. SSH_MSG_DISCONNECT's Reason Code section is 4 bytes. Arbitrary, Reason Code is 9 in decimal = 9 in hexadecimal. So, Reason Code is '00 00 00 09'."
-             f"5. SSH_MSG_DISCONNECT's Description section is variable. Arbitrary, Description is 'Disconnected' in text = \"44 69 73 63 6f 6e 6e 65 63 74 65 64\" in ASCII code. So, Description is '44 69 73 63 6f 6e 6e 65 63 74 65 64'."
-             f"6. SSH_MSG_DISCONNECT's Language Tag section is variable. Arbitrary, Language Tag is 'en' in text = \"65 6e\" in ASCII code. So, Language Tag is '65 6e'."
+             # Backward CoT
+             f"Generating a byte sequence message is backward process."
+             f"1. SSH_MSG_DISCONNECT's Language Tag section is variable. Arbitrary, Language Tag is 'en' in text = \"65 6e\" in ASCII code. So, Language Tag is '65 6e'."
+             f"2. SSH_MSG_DISCONNECT's Description section is variable. Arbitrary, Description is 'Disconnected' in text = \"44 69 73 63 6f 6e 6e 65 63 74 65 64\" in ASCII code. So, Description is '44 69 73 63 6f 6e 6e 65 63 74 65 64'."
+             f"3. SSH_MSG_DISCONNECT's Reason Code section is 4 bytes. Arbitrary, Reason Code is 9 in decimal = 9 in hexadecimal. So, Reason Code is '00 00 00 09'."
+             f"4. SSH_MSG_DISCONNECT's Length section is 4 bytes. Language Tag is 2 bytes, Description is 12 bytes (from 2), Reason Code is 4 bytes (from 3). So, Length is 2 + 12 + 4 = 18 in decimal => 12 in hexadecimal. So, Length is '00 00 00 12'."
+             f"5. SSH_MSG_DISCONNECT's Reserved section with 1 byte set as '00'."
+             f"6. SSH_MSG_DISCONNECT's PDU type is 1 with 1 byte. So, PDU Type is '01'."
              f"7. So, SSH_MSG_DISCONNECT's byte sequence is '01 00 00 12 00 00 00 09 44 69 73 63 6f 6e 6e 65 63 74 65 64 65 6e'.")
 
     temperature = 0.5
@@ -351,7 +352,7 @@ def get_modified_structured_message(message, structure, type):
             f"3. SSH_MSG_DISCONNECT's Length is 18 in decimal = 12 in hexadecimal. So, Reason Code 4 bytes, Description 12 bytes, Language Tag 2 bytes, Total 18 bytes. So, Length is '00 00 00 12'. It is correct."
             f"4. SSH_MSG_DISCONNECT's Reason Code is 9 in decimal = 9 in hexadecimal. It is correct."
             f"5. SSH_MSG_DISCONNECT's Description section 'Disconnected' in text = \"44 69 73 63 6f 6e 6e 65 63 74 65 64\" in ASCII code. So, It is correct."
-            f"6. SSH_MSG_DISCONNECT's Language Tag section is variable. Arbitrary, Language Tag is 'en' in text = \"65 6e\" in ASCII code. So, It is correct."
+            f"6. SSH_MSG_DISCONNECT's Language Tag section is variable. Language Tag is 'en' in text = \"65 6e\" in ASCII code. So, It is correct."
             f"7. Finally, the SSH_MSG_DISCONNECT message is correct. There is no need to modify it.")
 
     temperature = 0.5
