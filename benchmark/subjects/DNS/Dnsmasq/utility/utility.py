@@ -63,7 +63,23 @@ def get_output_path(protocol: str) -> str:
             number += 1
         else:
             return file_path
-        
+
+# 새로 만든 시드 코퍼스 저장 경로를 반환하는 함수
+def get_text_message_output_path(protocol: str, dir: str) -> str:
+    number = 0
+    if (not os.path.isdir(f'{dir}')):
+        os.makedirs(f'{dir}/')
+
+    while True:
+        output_dir = f"{dir}/"
+        file_name = f"new_{protocol}_message_sequence_{number}.raw"
+        file_path = os.path.join(output_dir, file_name)
+
+        if os.path.exists(file_path):
+            number += 1
+        else:
+            return file_path
+
 # 새로 만든 시드 코퍼스 저장 경로를 반환하는 함수
 def get_byte_sequence_output_path(protocol: str, dir: str) -> str:
     number = 0
@@ -182,7 +198,7 @@ def save_and_log_result(file_path: str, model: str, temperature: float, prompt: 
     write_to_file(file_path=file_path, string=result)
 
     # DEBUG
-    print(result)
+    # print(result)
 
 # LLM 테스트용 프롬프트
 def test_llm(prompt, client):
@@ -242,3 +258,8 @@ def concatenate_values_t2s(message_dict: Dict[str, str]) -> str:
         str: 모든 바이트 시퀀스가 공백으로 구분된 하나의 문자열.
     """
     return ' '.join(message_dict.values())
+
+def save_text_message_sequence_to_file(message_sequence: List[str], file_path: str) -> None:
+    with open(file_path, 'w') as file:
+        for message in message_sequence:
+            file.write(message + "\r\n")
