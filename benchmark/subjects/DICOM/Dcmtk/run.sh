@@ -12,7 +12,7 @@ strstr() {
 }
 
 #Commands for afl-based fuzzers (e.g., aflnet, aflnwe)
-if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
+if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm") || $(strstr $FUZZER "snetgen"); then
 
   # Run fuzzer-specific commands (if any)
   if [ -e ${WORKDIR}/run-${FUZZER} ]; then
@@ -26,6 +26,10 @@ if $(strstr $FUZZER "afl") || $(strstr $FUZZER "llm"); then
   if [ $FUZZER = "chatafl-bin" ]; then
     pip install pydantic openai
     python3 enrich_corpus.py -o ${WORKDIR}/in-dicom -p DICOM
+  fi
+  if [ $FUZZER = "snetgen" ]; then
+    pip install pydantic openai
+    python3 SNetGen.py -o ${WORKDIR}/in-dicom -p DICOM
   fi
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}/build/bin
