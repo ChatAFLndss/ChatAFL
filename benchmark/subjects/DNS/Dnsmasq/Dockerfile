@@ -93,7 +93,7 @@ ENV OPENAI_API_KEY="1"
 RUN mkdir $WORKDIR
 
 USER root
-RUN apt-get -y install dnsutils
+RUN apt-get -y update && apt-get -y install --fix-missing dnsutils
 
 COPY --chown=ubuntu:ubuntu dnsmasq.patch ${WORKDIR}/dnsmasq.patch
 
