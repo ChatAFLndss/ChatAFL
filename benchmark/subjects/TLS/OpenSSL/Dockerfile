@@ -73,6 +73,12 @@ COPY --chown=ubuntu:ubuntu chatafl-bin chatafl-bin
 RUN cd chatafl-bin && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
+
+COPY --chown=ubuntu:ubuntu snetgen snetgen
+RUN cd snetgen && \
+    make clean all $MAKE_OPT && \
+    cd llvm_mode && make $MAKE_OPT
+    
     
 # Set up environment variables for AFLNet
 ENV WORKDIR="/home/ubuntu/experiments"
@@ -120,3 +126,6 @@ COPY --chown=ubuntu:ubuntu in-tls ${WORKDIR}/in-tls
 COPY --chown=ubuntu:ubuntu tls.dict ${WORKDIR}/tls.dict
 COPY --chown=ubuntu:ubuntu cov_script.sh ${WORKDIR}/cov_script
 COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
+COPY --chown=ubuntu:ubuntu SNetGen.py ${WORKDIR}/SNetGen.py
+COPY --chown=ubuntu:ubuntu LLM ${WORKDIR}/LLM
+COPY --chown=ubuntu:ubuntu utility ${WORKDIR}/utility

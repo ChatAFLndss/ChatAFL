@@ -6,7 +6,7 @@ if [ -z $KEY ]; then
 fi
 
 # Update the openAI key
-for x in ChatAFL ChatAFL-CL1 ChatAFL-CL2 ChatAFL-SEED ChatAFL-BIN;
+for x in ChatAFL ChatAFL-CL1 ChatAFL-CL2 ChatAFL-SEED ChatAFL-BIN SNetGen;
 do
   sed -i "s/#define OPENAI_TOKEN \".*\"/#define OPENAI_TOKEN \"$KEY\"/" $x/chat-llm.h
 done
@@ -40,6 +40,9 @@ for subject in ./benchmark/subjects/*/*; do
   
   rm -r $subject/chatafl-bin 2>&1 >/dev/null
   cp -r ChatAFL-BIN $subject/chatafl-bin
+
+  rm -r $subject/snetgen 2>&1 >/dev/null
+  cp -r SNetGen $subject/snetgen
 done;
 
 # Build the docker images
