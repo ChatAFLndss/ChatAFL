@@ -28,7 +28,7 @@ ChatAFL-Artifact
 
 ## Citing ChatAFL
 
-ChatAFL has been accepted for publication at the 31st Annual Network and Distributed System Security Symposium (NDSS) 2024. The paper is also available [here](https://mengrj.github.io/files/chatafl.pdf). If you use this code in your scientific work, please cite the paper as follows:
+ChatAFL has been accepted for publication at the 31st Annual Network and Distributed System Security Symposium (NDSS) 2024. The paper is also available [here](https://mengrj.github.io/pdfs/chatafl.pdf). If you use this code in your scientific work, please cite the paper as follows:
 
 ```
 @inproceedings{chatafl,
